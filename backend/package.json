@@ -11,7 +11,8 @@
     "worker:yt": "node src/workers/youtubePublishWorker.js",
     "worker:automation": "node src/workers/automationWorker.js",
     "scheduler": "node src/workers/schedulerWorker.js",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "e2e": "node scripts/e2eTest.js"
   },
   "engines": {
     "node": ">=18.0.0"

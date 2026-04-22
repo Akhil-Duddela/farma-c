@@ -333,7 +333,19 @@ async function listPosts(userId, query = {}) {
   const filter = { userId };
   if (query.status) filter.status = query.status;
   if (query.automation === '1' || query.automation === 'true') {
-    filter.pipelineStatus = { $in: ['processing', 'completed', 'failed', 'partial'] };
+    filter.pipelineStatus = {
+      $in: [
+        'processing',
+        'ai_done',
+        'video_done',
+        'uploaded',
+        'publishing',
+        'published',
+        'completed',
+        'failed',
+        'partial',
+      ],
+    };
   }
   return Post.find(filter)
     .sort({ createdAt: -1 })

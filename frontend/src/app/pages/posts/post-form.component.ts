@@ -111,7 +111,11 @@ export class PostFormComponent implements OnInit {
       },
       error: (e) => {
         this.loading = false;
-        this.error = e.error?.error || 'Save failed';
+        const arr = e.error?.errors;
+        const first = Array.isArray(arr) && arr[0]?.msg;
+        this.error = first
+          ? String(first)
+          : e.error?.error || e.error?.message || (typeof e.error === 'string' ? e.error : e.message) || 'Save failed';
       },
     });
   }
@@ -119,7 +123,9 @@ export class PostFormComponent implements OnInit {
   runAi(): void {
     this.aiBusy = true;
     this.error = '';
-    this.posts.generateAi({ topic: 'desi poultry and organic farming' }).subscribe({
+    const cap = this.form.getRawValue().caption?.trim();
+    const topic = cap && cap.length > 3 ? cap.slice(0, 200) : 'desi poultry and organic farming';
+    this.posts.generateAi({ topic }).subscribe({
       next: (bundle: any) => {
         this.aiBusy = false;
         this.form.patchValue({
@@ -132,7 +138,8 @@ export class PostFormComponent implements OnInit {
       },
       error: (e) => {
         this.aiBusy = false;
-        this.error = e.error?.error || 'AI generation failed';
+        this.error =
+          e.error?.error || e.error?.message || (typeof e.error === 'string' ? e.error : e.message) || 'AI generation failed';
       },
     });
   }
@@ -153,7 +160,8 @@ export class PostFormComponent implements OnInit {
         },
         error: (e) => {
           this.mediaBusy = false;
-          this.error = e.error?.error || 'Media generation failed';
+          this.error =
+            e.error?.error || e.error?.message || (typeof e.error === 'string' ? e.error : e.message) || 'Media generation failed';
         },
       });
   }
@@ -162,12 +170,17 @@ export class PostFormComponent implements OnInit {
     const cap = this.form.getRawValue().caption;
     if (!cap) return;
     this.aiBusy = true;
+    this.error = '';
     this.posts.improveCaption(cap).subscribe({
       next: (r) => {
         this.aiBusy = false;
         this.form.patchValue({ caption: r.caption });
       },
-      error: () => (this.aiBusy = false),
+      error: (e) => {
+        this.aiBusy = false;
+        this.error =
+          e.error?.error || e.error?.message || (typeof e.error === 'string' ? e.error : e.message) || 'Failed to improve caption';
+      },
     });
   }
 }

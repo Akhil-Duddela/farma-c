@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CreatePostCardComponent } from './create-post-card.component';
 import { PostStatusTableComponent } from './post-status-table.component';
@@ -28,6 +29,7 @@ export class DashboardComponent implements OnInit {
   private readonly analytics = inject(AnalyticsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   refreshTick = 0;
   summary: { totals?: { likes: number; reach: number; impressions: number } } = {};
@@ -44,6 +46,15 @@ export class DashboardComponent implements OnInit {
         replaceUrl: true,
       });
     }
+    this.route.fragment
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((frag) => {
+        if (frag === 'create-post') {
+          setTimeout(() => {
+            document.getElementById('create-post')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 0);
+        }
+      });
   }
 
   onPostCreated(): void {
@@ -61,6 +72,7 @@ export class DashboardComponent implements OnInit {
   onLogRetryRequest(postId: string): void {
     this.posts.retryPost(postId, {}).subscribe({
       next: () => this.bump(),
+      error: () => this.bump(),
     });
   }
 

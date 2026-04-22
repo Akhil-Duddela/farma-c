@@ -20,6 +20,8 @@ export class PostStatusTableComponent implements OnInit, OnDestroy, OnChanges {
 
   postsList: Post[] = [];
   retrying: Record<string, boolean> = {};
+  /** Shown when a retry API call fails */
+  retryError = '';
   /** Emitted to parent to refresh other widgets */
   readonly dataChanged = output<void>();
 
@@ -166,6 +168,10 @@ export class PostStatusTableComponent implements OnInit, OnDestroy, OnChanges {
     );
   }
 
+  dismissRetryError(): void {
+    this.retryError = '';
+  }
+
   canRetry(p: Post): boolean {
     const igF = p.platforms?.instagram?.status === 'failed' && p.platforms?.instagram?.enabled;
     const ytF = p.platforms?.youtube?.status === 'failed' && p.platforms?.youtube?.enabled;
@@ -178,14 +184,21 @@ export class PostStatusTableComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
     this.retrying[id] = true;
+    this.retryError = '';
     this.posts.retryPost(id, {}).subscribe({
       next: () => {
         this.retrying[id] = false;
         this.load();
         this.dataChanged.emit();
       },
-      error: () => {
+      error: (e) => {
         this.retrying[id] = false;
+        const msg =
+          e.error?.error ||
+          e.error?.message ||
+          (e.error && typeof e.error === 'string' ? e.error : e.message) ||
+          'Retry failed. Check your accounts and try again.';
+        this.retryError = String(msg);
       },
     });
   }

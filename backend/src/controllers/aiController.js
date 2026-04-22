@@ -8,8 +8,8 @@ async function enhance(req, res, next) {
       return res.status(400).json({ errors: errors.array() });
     }
     const input = req.body.input;
-    const data = await aiEnhancerService.enhanceContent(input);
-    res.json(data);
+    const data = await aiEnhancerService.enhanceContent(input, { requestId: req.id });
+    res.json({ ...data, requestId: req.id });
   } catch (e) {
     next(e);
   }

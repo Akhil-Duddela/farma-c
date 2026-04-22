@@ -29,6 +29,8 @@ export class AiEnhancerComponent {
   readonly result = signal<EnhancedContent | null>(null);
   readonly errorMsg = signal<string>('');
   readonly fieldError = signal<string>('');
+  /** Shown when API returned static fallback (cloud/local AI unavailable) */
+  readonly degradedInfo = signal<string>('');
   readonly copyFeedback = signal<string>('');
   readonly showToast = signal(false);
   readonly toastKind = signal<ToastKind>('info');
@@ -37,6 +39,7 @@ export class AiEnhancerComponent {
   submit(): void {
     this.fieldError.set('');
     this.errorMsg.set('');
+    this.degradedInfo.set('');
     this.result.set(null);
     this.hideToast();
     if (this.form.invalid) {
@@ -50,7 +53,16 @@ export class AiEnhancerComponent {
       next: (r) => {
         this.loading.set(false);
         this.result.set(this.normalizeResult(r));
-        this.showAppToast('success', 'Content generated. Review the cards below or copy a section.');
+        if (r._meta?.degraded) {
+          const reason = r._meta.reason ? ` (${r._meta.reason})` : '';
+          this.degradedInfo.set(
+            `AI services were unavailable. Showing a static template so you can still work.${reason}`
+          );
+          this.showAppToast('info', 'Using offline template content. You can edit or retry.');
+        } else {
+          this.degradedInfo.set('');
+          this.showAppToast('success', 'Content generated. Review the cards below or copy a section.');
+        }
       },
       error: (e: HttpErrorResponse) => {
         this.loading.set(false);
@@ -82,6 +94,8 @@ export class AiEnhancerComponent {
       hashtags: Array.isArray(r.hashtags) ? r.hashtags : [],
       hooks: Array.isArray(r.hooks) ? r.hooks : [],
       videoIdea: r.videoIdea || '',
+      _meta: r._meta,
+      requestId: r.requestId,
     };
   }
 
@@ -89,6 +103,8 @@ export class AiEnhancerComponent {
     const v = this.result();
     if (!v) return;
     this.prefill.setForCreatePost({
+      title: v.title,
+      description: v.description,
       caption: v.caption,
       script: v.script,
       hashtags: v.hashtags,

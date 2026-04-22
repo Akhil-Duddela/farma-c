@@ -11,8 +11,8 @@ function syncPipelineFields(post) {
   if (st && !['publishing', 'done', ''].includes(st)) {
     return;
   }
-  if (post.status === 'posted' && post.pipelineStatus === 'processing') {
-    post.pipelineStatus = 'completed';
+  if (post.status === 'posted' && ['processing', 'publishing', 'uploaded', 'ai_done', 'video_done', 'completed'].includes(String(post.pipelineStatus))) {
+    post.pipelineStatus = 'published';
     post.automation.step = 'done';
     post.automation.completedAt = post.automation.completedAt || new Date();
   } else if (post.status === 'partial') {

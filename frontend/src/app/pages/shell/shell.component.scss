@@ -17,10 +17,16 @@
   line-height: 1;
 }
 
+/* Custom backdrop z-index: panel above backdrop (Bootstrap class names; no Offcanvas JS) */
+.fc-offcanvas-backdrop {
+  z-index: 1040;
+}
+
 /* Dark panel for offcanvas: match app sidebar feel */
 .fc-offcanvas {
   background: linear-gradient(180deg, var(--fc-forest) 0%, var(--fc-earth) 100%);
   width: min(20rem, 100vw);
+  z-index: 1045;
 }
 
 /* Shared nav link styles: desktop + offcanvas */

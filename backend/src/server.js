@@ -3,6 +3,14 @@ const app = require('./app');
 const config = require('./config');
 const { connectDatabase } = require('./config/database');
 const logger = require('./utils/logger');
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('unhandledRejection', { err: String(reason) });
+});
+process.on('uncaughtException', (err) => {
+  logger.error('uncaughtException', { err: err.message, stack: err.stack });
+  process.exit(1);
+});
 const postService = require('./services/postService');
 const { getInstagramQueue, getYoutubeQueue, getAIGenerationQueue, getVideoGenerationQueue } = require('./queues');
 const { processAIJob, processVideoJob } = require('./services/automationPipelineService');
@@ -10,7 +18,24 @@ const { executeInstagramJob } = require('./services/instagramPlatformService');
 const { executeYoutubeJob } = require('./services/youtubePlatformService');
 const { startDailyPostsCron } = require('./services/dailyPostsService');
 
+function logProductionConfigWarnings() {
+  if (config.env !== 'production') {
+    return;
+  }
+  for (const name of ['MONGODB_URI', 'JWT_SECRET', 'ENCRYPTION_KEY', 'REDIS_URL']) {
+    if (!process.env[name]) {
+      logger.warn(`Environment ${name} is not set in production`, { service: 'config' });
+    }
+  }
+  if (/localhost|127\.0\.0\.1/.test(config.frontendUrl || '')) {
+    logger.warn('FRONTEND_URL / CORS may still point to localhost; set FRONTEND_URL for OAuth in production', {
+      frontendUrl: config.frontendUrl,
+    });
+  }
+}
+
 async function start() {
+  logProductionConfigWarnings();
   await connectDatabase();
 
   try {

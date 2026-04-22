@@ -110,15 +110,35 @@ const postSchema = new mongoose.Schema(
     /** Public URL to generated video (may mirror mediaUrl) */
     videoUrl: { type: String, default: '' },
     /**
-     * High-level pipeline state for auto-post flow.
-     * `processing` = any of ai | video | upload | publishing
+     * High-level pipeline: idle → processing → ai_done → video_done → uploaded → publishing → published | partial | failed
+     * `completed` kept for older documents; new runs use `published`.
      */
     pipelineStatus: {
       type: String,
-      enum: ['idle', 'processing', 'completed', 'failed', 'partial'],
+      enum: [
+        'idle',
+        'processing',
+        'ai_done',
+        'video_done',
+        'uploaded',
+        'publishing',
+        'published',
+        'completed',
+        'failed',
+        'partial',
+      ],
       default: 'idle',
       index: true,
     },
+    /** Last N pipeline / integration errors (non-fatal AI degrade is optional) */
+    errorHistory: [
+      {
+        at: { type: Date, default: Date.now },
+        step: { type: String, default: '' },
+        message: { type: String, default: '' },
+        requestId: { type: String, default: '' },
+      },
+    ],
     automation: {
       step: {
         type: String,

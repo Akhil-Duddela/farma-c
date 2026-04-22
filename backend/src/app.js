@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { requestIdMiddleware } = require('./middleware/requestId');
+const { connectState } = require('./config/healthState');
 
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
@@ -19,6 +21,7 @@ const automationRoutes = require('./routes/automationRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
+app.use(requestIdMiddleware);
 app.use(helmet());
 app.use(
   cors({
@@ -39,6 +42,17 @@ app.use('/api/', limiter);
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'farm-c-ai-backend', env: config.env });
+});
+
+app.get('/health/ready', (req, res) => {
+  if (connectState.mongoose === 1) {
+    return res.json({ ok: true, ready: true, db: 'connected' });
+  }
+  return res.status(503).json({
+    ok: false,
+    ready: false,
+    db: connectState.mongoose === 2 ? 'connecting' : 'disconnected',
+  });
 });
 
 app.use('/api/auth', authRoutes);

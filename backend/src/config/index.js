@@ -21,17 +21,6 @@ const fs = require('fs');
   require('dotenv').config({ override: false });
 })();
 
-const requiredInProduction = (name) => {
-  if (process.env.NODE_ENV === 'production' && !process.env[name]) {
-    console.warn(`Warning: ${name} is not set in production`);
-  }
-};
-
-requiredInProduction('MONGODB_URI');
-requiredInProduction('JWT_SECRET');
-requiredInProduction('ENCRYPTION_KEY');
-requiredInProduction('REDIS_URL');
-
 /**
  * Where the SPA lives (for OAuth return redirects, emails, etc.).
  * In production, set FRONTEND_URL to your public UI (e.g. https://farma-c-ui.onrender.com).
@@ -59,11 +48,6 @@ function resolveFrontendUrl() {
 }
 
 const frontendUrl = resolveFrontendUrl();
-if (process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(frontendUrl)) {
-  console.warn(
-    '[config] FRONTEND_URL and CORS_ORIGIN may still point to localhost. Set FRONTEND_URL to your public UI (e.g. https://farma-c-ui.onrender.com) for OAuth redirects.'
-  );
-}
 
 module.exports = {
   env: process.env.NODE_ENV || 'development',
@@ -104,5 +88,16 @@ module.exports = {
     model: process.env.OLLAMA_MODEL || 'llama3',
     /** ms */
     timeoutMs: parseInt(process.env.OLLAMA_TIMEOUT_MS || '120000', 10),
+  },
+  /**
+   * AI_PROVIDER: ollama | openai | auto
+   * auto: try Ollama → OpenAI (if key) → static fallback
+   */
+  ai: {
+    provider: (process.env.AI_PROVIDER || 'auto').toLowerCase(),
+    openaiBaseUrl: (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, ''),
+    openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    openaiTimeoutMs: parseInt(process.env.OPENAI_TIMEOUT_MS || '120000', 10),
+    maxRetries: Math.min(4, Math.max(1, parseInt(process.env.AI_MAX_RETRIES || '2', 10) || 2)),
   },
 };

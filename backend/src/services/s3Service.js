@@ -55,7 +55,7 @@ async function uploadBuffer(buffer, contentType, keyPrefix = 'media') {
         })
       );
     },
-    { maxAttempts: 3, baseDelayMs: 1000 }
+    { maxAttempts: 2, baseDelayMs: 1000, maxDelayMs: 20000 }
   );
 
   if (config.aws.publicBaseUrl) {
@@ -114,7 +114,7 @@ async function uploadUserMedia(buffer, originalName = '', mimetype = 'applicatio
         })
       );
     },
-    { maxAttempts: 3, baseDelayMs: 1000 }
+    { maxAttempts: 2, baseDelayMs: 1000, maxDelayMs: 20000 }
   );
   if (config.aws.publicBaseUrl) {
     const base = config.aws.publicBaseUrl.replace(/\/$/, '');

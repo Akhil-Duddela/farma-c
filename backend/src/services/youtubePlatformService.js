@@ -3,6 +3,7 @@ const { getPrimaryMediaUrl } = require('../utils/platformMedia');
 const { recomputeAggregatedStatus, markPlatformResult } = require('./postStatusService');
 const youtubeService = require('./youtubeService');
 const logService = require('./logService');
+const { withRetry } = require('../utils/retry');
 
 const VIDEO_TYPES = new Set(['video', 'reel']);
 
@@ -81,17 +82,26 @@ async function executeYoutubeJob({ postId }) {
   });
 
   try {
+    const full = await Post.findById(postId).populate('youtubeAccountId');
+    const acc = full?.youtubeAccountId;
+    if (!acc) {
+      throw new Error('YouTube account not found on post');
+    }
     const title = (lock.caption || lock.content || 'Short').slice(0, 100);
     const desc = [lock.caption, lock.content].filter(Boolean).join('\n\n').slice(0, 5000);
     const tags = Array.isArray(lock.hashtags) ? lock.hashtags.map((h) => String(h).replace(/^#/, '')) : [];
-    const { videoId, durationSec } = await youtubeService.uploadShortFromUrl({
-      account,
-      videoUrl,
-      title,
-      description: desc,
-      tags,
-      privacyStatus: 'unlisted',
-    });
+    const { videoId, durationSec } = await withRetry(
+      () =>
+        youtubeService.uploadShortFromUrl({
+          account: acc,
+          videoUrl,
+          title,
+          description: desc,
+          tags,
+          privacyStatus: 'unlisted',
+        }),
+      { maxAttempts: 2, baseDelayMs: 2000, maxDelayMs: 20000 }
+    );
     const fresh = await Post.findById(postId);
     if (!fresh) {
       return { success: true, videoId, durationSec };

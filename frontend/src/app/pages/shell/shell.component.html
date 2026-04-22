@@ -13,8 +13,8 @@
     type="button"
     class="btn btn-light btn-sm d-flex align-items-center justify-content-center p-2 border-0 rounded-3"
     style="min-width: 2.75rem; min-height: 2.75rem"
-    data-bs-toggle="offcanvas"
-    data-bs-target="#fcNavOffcanvas"
+    (click)="openNav()"
+    [attr.aria-expanded]="navOpen()"
     aria-controls="fcNavOffcanvas"
     aria-label="Open menu"
   >
@@ -25,18 +25,31 @@
   </button>
 </header>
 
+@if (navOpen()) {
+  <div
+    class="offcanvas-backdrop fade show d-lg-none fc-offcanvas-backdrop"
+    (click)="closeNav()"
+    role="presentation"
+    aria-hidden="true"
+  ></div>
+}
+
 <div
-  class="offcanvas offcanvas-start text-bg-dark fc-offcanvas"
-  tabindex="-1"
+  class="offcanvas offcanvas-start text-bg-dark fc-offcanvas d-lg-none"
+  [class.show]="navOpen()"
+  [attr.aria-hidden]="!navOpen()"
+  [attr.aria-modal]="navOpen()"
   id="fcNavOffcanvas"
+  role="dialog"
   aria-labelledby="fcNavOffcanvasLabel"
+  tabindex="-1"
 >
   <div class="offcanvas-header border-bottom border-light border-opacity-25">
     <h2 class="h5 offcanvas-title mb-0" id="fcNavOffcanvasLabel">Menu</h2>
     <button
       type="button"
       class="btn-close btn-close-white"
-      data-bs-dismiss="offcanvas"
+      (click)="closeNav()"
       aria-label="Close"
     ></button>
   </div>
@@ -79,27 +92,27 @@
     routerLink="/dashboard"
     routerLinkActive="active"
     [routerLinkActiveOptions]="{ exact: true }"
-    data-bs-dismiss="offcanvas"
+    (click)="closeNav()"
     class="offcanvas-link"
     >Dashboard</a
   >
-  <a routerLink="/posts" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+  <a routerLink="/posts" routerLinkActive="active" (click)="closeNav()" class="offcanvas-link"
     >All posts</a
   >
-  <a routerLink="/calendar" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+  <a routerLink="/calendar" routerLinkActive="active" (click)="closeNav()" class="offcanvas-link"
     >Schedule</a
   >
-  <a routerLink="/analytics" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+  <a routerLink="/analytics" routerLinkActive="active" (click)="closeNav()" class="offcanvas-link"
     >Analytics</a
   >
-  <a routerLink="/ai" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+  <a routerLink="/ai" routerLinkActive="active" (click)="closeNav()" class="offcanvas-link"
     >AI studio</a
   >
-  <a routerLink="/logs" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link">Logs</a>
+  <a routerLink="/logs" routerLinkActive="active" (click)="closeNav()" class="offcanvas-link">Logs</a>
   <a
     routerLink="/settings"
     routerLinkActive="active"
-    data-bs-dismiss="offcanvas"
+    (click)="closeNav()"
     class="offcanvas-link"
     >Settings</a
   >

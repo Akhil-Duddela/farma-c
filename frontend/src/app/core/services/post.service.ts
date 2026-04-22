@@ -36,7 +36,18 @@ export interface Post {
   platforms?: { instagram: PlatformState; youtube: PlatformState };
   analytics?: { likes: number; reach: number; impressions: number; lastSyncedAt?: string | null };
   /** Full AI → video → publish pipeline */
-  pipelineStatus?: 'idle' | 'processing' | 'completed' | 'failed' | 'partial';
+  pipelineStatus?:
+    | 'idle'
+    | 'processing'
+    | 'ai_done'
+    | 'video_done'
+    | 'uploaded'
+    | 'publishing'
+    | 'published'
+    | 'completed'
+    | 'failed'
+    | 'partial';
+  errorHistory?: { at?: string; step?: string; message?: string; requestId?: string }[];
   videoUrl?: string;
   aiContent?: {
     title?: string;

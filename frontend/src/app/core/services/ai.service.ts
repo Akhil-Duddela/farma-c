@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface EnhancedContentMeta {
+  source?: string;
+  degraded?: boolean;
+  requestId?: string;
+  reason?: string;
+}
+
 export interface EnhancedContent {
   title: string;
   description: string;
@@ -11,6 +18,8 @@ export interface EnhancedContent {
   hashtags: string[];
   hooks: string[];
   videoIdea: string;
+  _meta?: EnhancedContentMeta;
+  requestId?: string;
 }
 
 @Injectable({ providedIn: 'root' })

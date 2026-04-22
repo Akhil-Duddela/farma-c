@@ -1,6 +1,9 @@
-import { Component, OnInit, inject, output } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, output } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { PostService, CreatePostV2Body } from '../../core/services/post.service';
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
 import { YoutubeService, YoutubeAccount } from '../../core/services/youtube.service';
@@ -23,6 +26,8 @@ export class CreatePostCardComponent implements OnInit {
   private readonly yt = inject(YoutubeService);
   private readonly upload = inject(UploadService);
   private readonly prefill = inject(CreatePostPrefillService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Emitted when a post was created (parent refreshes) */
   readonly postCreated = output<void>();
@@ -49,6 +54,21 @@ export class CreatePostCardComponent implements OnInit {
   ngOnInit(): void {
     this.ig.list().subscribe((a) => (this.igAccounts = a));
     this.yt.list().subscribe((a) => (this.ytAccounts = a));
+    this.applyPrefill();
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((e) => {
+        if (e.urlAfterRedirects?.includes('dashboard') || e.urlAfterRedirects === '/') {
+          this.applyPrefill();
+        }
+      });
+  }
+
+  /** Apply AI prefill (safe when re-navigating to dashboard with same component instance) */
+  private applyPrefill(): void {
     const fromAi = this.prefill.consume();
     if (fromAi) {
       this.form.patchValue({

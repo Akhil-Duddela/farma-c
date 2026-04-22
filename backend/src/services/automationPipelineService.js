@@ -9,6 +9,28 @@ const { getAIGenerationQueue, getVideoGenerationQueue } = require('../queues');
 const logger = require('../utils/logger');
 
 /**
+ * @param {import('mongoose').Document} post
+ * @param {string} step
+ * @param {string} message
+ * @param {string} [requestId]
+ */
+function pushPipelineError(post, step, message, requestId) {
+  if (!Array.isArray(post.errorHistory)) {
+    post.errorHistory = [];
+  }
+  post.errorHistory.push({
+    at: new Date(),
+    step: String(step).slice(0, 100),
+    message: String(message).slice(0, 2000),
+    requestId: requestId ? String(requestId).slice(0, 64) : '',
+  });
+  if (post.errorHistory.length > 50) {
+    post.errorHistory = post.errorHistory.slice(-50);
+  }
+  post.markModified('errorHistory');
+}
+
+/**
  * Enqueue first step: AI enhancement.
  * @param {import('mongoose').Types.ObjectId} postId
  * @param {import('mongoose').Types.ObjectId} userId
@@ -41,16 +63,18 @@ async function processAIJob(job) {
     logger.info('AI job skipped: wrong step', { postId, step: post.automation?.step });
     return { skipped: true };
   }
+  const requestId = `ai-job-${job.id}`;
   let enhanced;
   try {
-    enhanced = await enhanceContent(input);
+    enhanced = await enhanceContent(input, { requestId });
   } catch (e) {
     post.automation = post.automation || {};
-    post.automation.lastError = e.message || 'AI failed';
+    post.automation.lastError = e.message || 'AI input validation failed';
     post.automation.step = 'failed';
     post.pipelineStatus = 'failed';
     post.status = 'failed';
     post.failureReason = post.automation.lastError;
+    pushPipelineError(post, 'automation.ai', post.automation.lastError, requestId);
     await post.save();
     await logService.logEntry({
       userId: post.userId,
@@ -61,20 +85,34 @@ async function processAIJob(job) {
     });
     throw e;
   }
-  const hooks = Array.isArray(enhanced.hooks) ? enhanced.hooks : [];
+  const { _meta, ...rest } = enhanced;
+  if (_meta && _meta.degraded) {
+    pushPipelineError(
+      post,
+      'automation.ai',
+      `AI used degraded static output (${_meta.source || 'unknown'}: ${_meta.reason || 'n/a'})`,
+      requestId
+    );
+    logger.info('AI step completed with static/degraded content; continuing pipeline', {
+      postId,
+      requestId,
+      source: _meta.source,
+    });
+  }
+  const hooks = Array.isArray(rest.hooks) ? rest.hooks : [];
   post.aiContent = {
-    title: enhanced.title,
-    description: enhanced.description,
-    script: enhanced.script,
-    caption: enhanced.caption,
-    hashtags: enhanced.hashtags || [],
+    title: rest.title,
+    description: rest.description,
+    script: rest.script,
+    caption: rest.caption,
+    hashtags: rest.hashtags || [],
     hooks,
-    videoIdea: enhanced.videoIdea,
+    videoIdea: rest.videoIdea,
     rawInput: input,
   };
-  post.content = enhanced.script || post.content;
-  post.caption = enhanced.caption || post.caption;
-  post.hashtags = (enhanced.hashtags && enhanced.hashtags.length ? enhanced.hashtags : post.hashtags) || [];
+  post.content = rest.script || post.content;
+  post.caption = rest.caption || post.caption;
+  post.hashtags = (rest.hashtags && rest.hashtags.length ? rest.hashtags : post.hashtags) || [];
   if (hooks.length) {
     post.reelScript = {
       hook: hooks[0] || '',
@@ -85,6 +123,12 @@ async function processAIJob(job) {
   post.automation = post.automation || {};
   post.automation.step = 'video';
   post.automation.lastError = '';
+  post.pipelineStatus = 'ai_done';
+  post.generationMeta = {
+    ...post.generationMeta,
+    model: _meta?.source || 'multi',
+    improved: !(_meta && _meta.degraded),
+  };
   await post.save();
 
   await getVideoGenerationQueue().add(
@@ -120,11 +164,9 @@ async function processVideoJob(job) {
     return { skipped: true };
   }
   const script = post.aiContent?.script || post.content || post.caption || 'Farm content';
+  const vRequestId = `video-job-${job.id}`;
   let buf;
   try {
-    post.automation.step = 'upload';
-    post.markModified('automation');
-    await post.save();
     buf = await generateVideoFromScript(script);
   } catch (e) {
     post.automation = post.automation || {};
@@ -133,9 +175,15 @@ async function processVideoJob(job) {
     post.pipelineStatus = 'failed';
     post.status = 'failed';
     post.failureReason = post.automation.lastError;
+    pushPipelineError(post, 'automation.video', post.automation.lastError, vRequestId);
     await post.save();
     throw e;
   }
+  post.pipelineStatus = 'video_done';
+  post.automation = post.automation || {};
+  post.automation.step = 'upload';
+  post.markModified('automation');
+  await post.save();
   let url;
   try {
     url = await s3Service.uploadUserMedia(
@@ -151,11 +199,13 @@ async function processVideoJob(job) {
     post.pipelineStatus = 'failed';
     post.status = 'failed';
     post.failureReason = post.automation.lastError;
+    pushPipelineError(post, 'automation.upload', post.automation.lastError, vRequestId);
     await post.save();
     throw e;
   }
   post.automation = post.automation || {};
   post.automation.step = 'publishing';
+  post.pipelineStatus = 'uploaded';
   post.mediaType = 'video';
   post.mediaUrl = url;
   post.mediaUrls = [url];
@@ -175,9 +225,14 @@ async function processVideoJob(job) {
     post.automation.step = 'failed';
     post.pipelineStatus = 'failed';
     post.status = 'failed';
+    pushPipelineError(post, 'automation.schedule', post.automation.lastError, vRequestId);
     await post.save();
     throw e;
   }
+  post.pipelineStatus = 'publishing';
+  post.markModified('pipelineStatus');
+  post.markModified('automation');
+  await post.save();
   await logService.logEntry({
     userId: post.userId,
     postId: post._id,

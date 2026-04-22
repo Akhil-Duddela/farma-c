@@ -104,13 +104,82 @@ export class AutomationPipelineComponent implements OnInit, OnDestroy {
 
   private isTerminal(p: Post): boolean {
     const ps = p.pipelineStatus;
-    if (ps === 'completed' || ps === 'failed' || ps === 'partial') return true;
-    if (p.automation?.step === 'failed' && p.status === 'failed') return true;
+    if (ps === 'completed' || ps === 'published' || ps === 'failed' || ps === 'partial') {
+      return true;
+    }
+    if (p.automation?.step === 'failed' && p.status === 'failed') {
+      return true;
+    }
     return false;
   }
 
   private stopPoll(): void {
     this.pollSub?.unsubscribe();
     this.pollSub = null;
+  }
+
+  stepAiDone(p: Post | null): boolean {
+    if (!p) return false;
+    const ps = p.pipelineStatus || '';
+    if (p.aiContent?.title) return true;
+    if (ps === 'ai_done') return true;
+    if (['video_done', 'uploaded', 'publishing', 'published', 'partial', 'failed', 'completed'].includes(ps)) {
+      return true;
+    }
+    return false;
+  }
+
+  stepVideoDone(p: Post | null): boolean {
+    if (!p) return false;
+    const ps = p.pipelineStatus || '';
+    if (p.videoUrl || p.mediaUrl) return true;
+    if (['uploaded', 'publishing', 'published', 'partial', 'failed', 'completed'].includes(ps)) {
+      return true;
+    }
+    return ps === 'video_done';
+  }
+
+  stepUploadDone(p: Post | null): boolean {
+    if (!p) return false;
+    const ps = p.pipelineStatus || '';
+    if (p.mediaUrl) return true;
+    if (['publishing', 'published', 'partial', 'failed', 'completed'].includes(ps)) {
+      return true;
+    }
+    return false;
+  }
+
+  stepPublishInProgress(p: Post | null): boolean {
+    if (!p) return false;
+    return p.status === 'publishing' || p.automation?.step === 'publishing';
+  }
+
+  stepPublishDone(p: Post | null): boolean {
+    if (!p) return false;
+    const done =
+      p.pipelineStatus === 'published' ||
+      p.pipelineStatus === 'partial' ||
+      p.pipelineStatus === 'completed' ||
+      p.status === 'posted' ||
+      p.status === 'failed';
+    if (!done) {
+      return false;
+    }
+    if (p.status === 'publishing' || p.automation?.step === 'publishing') {
+      return false;
+    }
+    return true;
+  }
+
+  /** CSS classes for `pipelineStatus` */
+  pipelineBadgeClass(ps: string | undefined): string {
+    const s = ps || '';
+    if (s === 'failed') return 'text-bg-danger';
+    if (s === 'partial') return 'text-bg-warning';
+    if (s === 'completed' || s === 'published') return 'text-bg-success';
+    if (s === 'processing' || s === 'ai_done' || s === 'video_done' || s === 'uploaded' || s === 'publishing') {
+      return 'text-bg-primary';
+    }
+    return 'text-bg-secondary';
   }
 }

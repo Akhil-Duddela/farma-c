@@ -1,5 +1,7 @@
 const axios = require('axios');
 const config = require('../config');
+const logger = require('../utils/logger');
+const { withRetry } = require('../utils/retry');
 
 const VIRAL_PROMPT = `You are an expert agricultural and social media content strategist for short-form video (Instagram Reels, YouTube Shorts). Turn the user's raw idea into authentic, high-engagement, shareable content. Keep tone warm, clear, and practical (farming, poultry, organic, desi when relevant).
 
@@ -31,7 +33,6 @@ const EMPTY = () => ({
 
 /**
  * @param {unknown} obj
- * @returns {ReturnType<typeof EMPTY>}
  */
 function normalizeShape(obj) {
   if (!obj || typeof obj !== 'object') {
@@ -53,11 +54,6 @@ function normalizeShape(obj) {
   };
 }
 
-/**
- * Try to parse JSON from Ollama response string (may include extra text).
- * @param {string} text
- * @returns {object|null}
- */
 function tryParseJsonObject(text) {
   if (!text || typeof text !== 'string') {
     return null;
@@ -86,10 +82,6 @@ function tryParseJsonObject(text) {
   return null;
 }
 
-/**
- * Last-resort: fill from loose key:value lines
- * @param {string} text
- */
 function fallbackFromText(text) {
   const out = EMPTY();
   if (!text) {
@@ -101,10 +93,7 @@ function fallbackFromText(text) {
 }
 
 /**
- * When Ollama is unreachable, return structured content so the API still succeeds (Render, offline, etc.).
- * Replace with OpenAI / OpenRouter / HuggingFace later if needed.
- * @param {string} input User idea (trimmed, non-empty)
- * @returns {object}
+ * @param {string} input
  */
 function fallbackAI(input) {
   const t = String(input);
@@ -124,72 +113,21 @@ function fallbackAI(input) {
 }
 
 /**
- * @param {string} input
- * @returns {Promise<ReturnType<typeof normalizeShape>>}
+ * @param {string} raw
+ * @returns {{ ok: true, value: string } | { ok: false }}
  */
-async function enhanceContent(input) {
-  const idea = String(input || '').trim();
-  if (!idea) {
-    const e = new Error('Input is required');
-    e.status = 400;
-    throw e;
+function sanitizeIdea(raw) {
+  if (raw == null || typeof raw !== 'string') {
+    return { ok: false };
   }
-  if (idea.length > 8000) {
-    const e = new Error('Input is too long (max 8000 characters)');
-    e.status = 400;
-    throw e;
+  const value = String(raw)
+    .replace(/\0/g, '')
+    .replace(/<script[\s\S]*?>/gi, '')
+    .trim();
+  if (!value.length || value.length > 8000) {
+    return { ok: false };
   }
-
-  const { baseUrl, model, timeoutMs } = config.ollama;
-  const prompt = VIRAL_PROMPT.replace(/\{USER_INPUT\}/g, idea);
-
-  const payload = {
-    model,
-    prompt,
-    stream: false,
-    format: 'json',
-  };
-
-  let res;
-  try {
-    res = await axios.post(`${baseUrl}/api/generate`, payload, {
-      timeout: timeoutMs,
-      headers: { 'Content-Type': 'application/json' },
-      validateStatus: () => true,
-    });
-  } catch (err) {
-    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-      console.warn('[aiEnhancer] Ollama not reachable, using fallback content:', err.code);
-      return normalizeShape(fallbackAI(idea));
-    }
-    if (err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout')) {
-      console.warn('[aiEnhancer] Ollama request timed out, using fallback content');
-      return normalizeShape(fallbackAI(idea));
-    }
-    console.warn('[aiEnhancer] Ollama request error, using fallback content:', err.message || err.code);
-    return normalizeShape(fallbackAI(idea));
-  }
-
-  if (res.status >= 400) {
-    // Retry without format: some Ollama versions may reject format json
-    try {
-      const res2 = await axios.post(
-        `${baseUrl}/api/generate`,
-        { model, prompt, stream: false },
-        { timeout: timeoutMs, headers: { 'Content-Type': 'application/json' }, validateStatus: () => true }
-      );
-      if (res2.status < 400) {
-        return parseOllamaBody(res2.data);
-      }
-    } catch {
-      // fall through
-    }
-    const msg = res.data && (res.data.error || res.data.message) ? String(res.data.error || res.data.message) : 'Ollama error';
-    console.warn('[aiEnhancer] Ollama returned error, using fallback content:', res.status, msg);
-    return normalizeShape(fallbackAI(idea));
-  }
-
-  return parseOllamaBody(res.data);
+  return { ok: true, value };
 }
 
 /**
@@ -205,13 +143,217 @@ function parseOllamaBody(data) {
       : typeof data === 'string'
         ? data
         : JSON.stringify(data);
-
   const parsed = tryParseJsonObject(text);
   if (parsed) {
     return normalizeShape(parsed);
   }
-  // fallback: not valid JSON but we have text
   return normalizeShape(fallbackFromText(text));
 }
 
-module.exports = { enhanceContent, tryParseJsonObject, normalizeShape, fallbackAI };
+/**
+ * @param {string} idea
+ * @param {string} prompt
+ */
+async function ollamaGenerate(idea, prompt) {
+  const { baseUrl, model, timeoutMs } = config.ollama;
+  const payload = { model, prompt, stream: false, format: 'json' };
+  const res = await axios.post(`${baseUrl}/api/generate`, payload, {
+    timeout: timeoutMs,
+    headers: { 'Content-Type': 'application/json' },
+    validateStatus: () => true,
+  });
+  if (res.status >= 400) {
+    const res2 = await axios
+      .post(
+        `${baseUrl}/api/generate`,
+        { model, prompt, stream: false },
+        { timeout: timeoutMs, headers: { 'Content-Type': 'application/json' }, validateStatus: () => true }
+      )
+      .catch(() => ({ status: 500, data: {} }));
+    if (res2 && res2.status < 400) {
+      return parseOllamaBody(res2.data);
+    }
+    throw new Error(
+      (res.data && (res.data.error || res.data.message) ? String(res.data.error || res.data.message) : '') || 'Ollama error'
+    );
+  }
+  return parseOllamaBody(res.data);
+}
+
+/**
+ * @param {string} idea
+ * @param {string} prompt
+ * @param {{ requestId?: string }} ctx
+ */
+async function openaiGenerate(idea, prompt, ctx) {
+  const key = config.openaiApiKey;
+  if (!key) {
+    throw new Error('OPENAI_API_KEY not set');
+  }
+  const { openaiBaseUrl, openaiModel, openaiTimeoutMs } = config.ai;
+  const body = {
+    model: openaiModel,
+    messages: [
+      { role: 'system', content: 'You output only a single valid JSON object; no other text.' },
+      { role: 'user', content: prompt },
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.5,
+  };
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${key}`,
+  };
+  if (openaiBaseUrl.includes('openrouter.ai')) {
+    headers['HTTP-Referer'] = process.env.OPENROUTER_REFERER || 'https://farmc.ai';
+    headers['X-Title'] = 'Farm-C AI';
+  }
+  const res = await axios.post(`${openaiBaseUrl}/chat/completions`, body, {
+    timeout: openaiTimeoutMs,
+    headers,
+    validateStatus: () => true,
+  });
+  if (res.status >= 400) {
+    const msg = res.data?.error?.message || res.data?.message || res.status;
+    throw new Error(`OpenAI: ${msg}`);
+  }
+  const text = res.data?.choices?.[0]?.message?.content;
+  if (!text || typeof text !== 'string') {
+    throw new Error('OpenAI: empty content');
+  }
+  const parsed = tryParseJsonObject(text);
+  if (parsed) {
+    return normalizeShape(parsed);
+  }
+  return normalizeShape(fallbackFromText(text));
+}
+
+/**
+ * @param {string} idea
+ * @param {{ requestId?: string } | undefined} ctx
+ */
+function meta(ctx, source, degraded, extra) {
+  return { source, degraded, requestId: ctx?.requestId || undefined, ...extra };
+}
+
+/**
+ * @param {string} idea
+ * @param {string} prompt
+ * @param {object} ctx
+ */
+async function runOllamaWithRetry(idea, prompt, ctx) {
+  return withRetry(
+    () => ollamaGenerate(idea, prompt),
+    { maxAttempts: config.ai.maxRetries, baseDelayMs: 2000, maxDelayMs: 20000 }
+  );
+}
+
+/**
+ * @param {string} idea
+ * @param {string} prompt
+ * @param {object} ctx
+ */
+async function runOpenAIWithRetry(idea, prompt, ctx) {
+  return withRetry(() => openaiGenerate(idea, prompt, ctx), {
+    maxAttempts: config.ai.maxRetries,
+    baseDelayMs: 2000,
+    maxDelayMs: 20000,
+  });
+}
+
+/**
+ * @param {string} idea
+ * @param {string} prompt
+ * @param {{ requestId?: string } | undefined} ctx
+ * @returns {Promise<{ result: ReturnType<typeof normalizeShape>, meta: object }>}
+ */
+async function resolveByProvider(idea, prompt, ctx) {
+  const p = (config.ai.provider || 'auto').toLowerCase();
+  if (p === 'openai' && !config.openaiApiKey) {
+    logger.warn('AI_PROVIDER=openai but OPENAI_API_KEY is missing; using static fallback', {
+      requestId: ctx?.requestId,
+    });
+    return {
+      result: normalizeShape(fallbackAI(idea)),
+      meta: meta(ctx, 'fallback', true, { reason: 'openai_key_missing' }),
+    };
+  }
+  if (p === 'openai' && config.openaiApiKey) {
+    try {
+      const r = await runOpenAIWithRetry(idea, prompt, ctx);
+      return { result: r, meta: meta(ctx, 'openai', false) };
+    } catch (e) {
+      logger.warn('OpenAI path failed, using fallback', { err: e.message, requestId: ctx?.requestId });
+      return {
+        result: normalizeShape(fallbackAI(idea)),
+        meta: meta(ctx, 'fallback', true, { reason: String(e.message) }),
+      };
+    }
+  }
+  if (p === 'ollama') {
+    try {
+      const r = await runOllamaWithRetry(idea, prompt, ctx);
+      return { result: r, meta: meta(ctx, 'ollama', false) };
+    } catch (e) {
+      logger.warn('Ollama-only path failed, using fallback', { err: e.message, requestId: ctx?.requestId });
+      return {
+        result: normalizeShape(fallbackAI(idea)),
+        meta: meta(ctx, 'fallback', true, { reason: String(e.message) }),
+      };
+    }
+  }
+  /** auto: ollama → openai → fallback */
+  try {
+    const r = await runOllamaWithRetry(idea, prompt, ctx);
+    return { result: r, meta: meta(ctx, 'ollama', false) };
+  } catch (e1) {
+    logger.warn('Ollama failed, trying OpenAI if configured', { err: e1.message, requestId: ctx?.requestId });
+  }
+  if (config.openaiApiKey) {
+    try {
+      const r = await runOpenAIWithRetry(idea, prompt, ctx);
+      return { result: r, meta: meta(ctx, 'openai', false) };
+    } catch (e2) {
+      logger.warn('OpenAI auto fallback failed, using static fallback', { err: e2.message, requestId: ctx?.requestId });
+    }
+  } else {
+    logger.warn('No OPENAI_API_KEY; static fallback', { requestId: ctx?.requestId });
+  }
+  return {
+    result: normalizeShape(fallbackAI(idea)),
+    meta: meta(ctx, 'fallback', true, { reason: 'all_ai_providers_exhausted' }),
+  };
+}
+
+/**
+ * @param {string} input
+ * @param {{ requestId?: string } | undefined} ctx
+ * @returns {Promise<object & { _meta?: object }>}
+ * Never throws after validation. Controller may validate and return 400 for bad input.
+ */
+async function enhanceContent(input, ctx) {
+  const safe = sanitizeIdea(String(input));
+  if (!safe.ok) {
+    const e = new Error('Valid input (1-8000 chars) is required');
+    e.status = 400;
+    throw e;
+  }
+  const idea = safe.value;
+  const prompt = VIRAL_PROMPT.replace(/\{USER_INPUT\}/g, idea);
+  try {
+    const { result, meta: m } = await resolveByProvider(idea, prompt, ctx || {});
+    return { ...result, _meta: m };
+  } catch (err) {
+    logger.error('[aiEnhancer] unexpected failure, returning static fallback', {
+      err: err.message,
+      stack: err.stack,
+      requestId: ctx?.requestId,
+    });
+    return {
+      ...normalizeShape(fallbackAI(idea)),
+      _meta: meta(ctx, 'fallback', true, { reason: err.message || 'unexpected' }),
+    };
+  }
+}
+
+module.exports = { enhanceContent, tryParseJsonObject, normalizeShape, fallbackAI, sanitizeIdea: (s) => sanitizeIdea(s) };

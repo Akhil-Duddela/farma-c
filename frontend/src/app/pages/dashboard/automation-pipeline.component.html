@@ -1,7 +1,7 @@
 <div class="card border-0 shadow-sm mb-4" id="automation-pipeline">
   <div class="card-header bg-white border-0 py-3">
     <h2 class="h5 mb-0 fw-semibold">🚀 Auto post pipeline</h2>
-    <p class="text-muted small mb-0">AI (Ollama) → video (FFmpeg) → S3 → Instagram &amp; YouTube. Requires Ollama, ffmpeg, S3, and workers.</p>
+    <p class="text-muted small mb-0">AI (Ollama or cloud fallback) → video (FFmpeg) → S3 → Instagram &amp; YouTube. Requires workers and configured storage.</p>
   </div>
   <div class="card-body">
     @if (error) {
@@ -38,17 +38,17 @@
       <div class="border rounded p-3 small mb-3 bg-body-tertiary">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <strong>Run</strong> <code class="small">#{{ activeId }}</code>
-          <span class="badge" [class.text-bg-info]="(current()?.pipelineStatus) === 'processing'">
+          <span class="badge" [ngClass]="pipelineBadgeClass(current()?.pipelineStatus)">
             {{ current()?.pipelineStatus || '—' }}
           </span>
           <span class="text-muted">step: {{ current()?.automation?.step || '—' }}</span>
         </div>
-        <ul class="list-unstyled mb-0 text-muted">
-          <li>✦ AI: {{ (current()?.automation?.step || '') === 'ai' ? 'in progress' : (current()?.aiContent?.title ? 'done' : '…') }}</li>
-          <li>✦ Video: {{ (current()?.automation?.step || '') === 'video' ? 'in progress' : (current()?.videoUrl || current()?.mediaUrl ? 'done' : '…') }}</li>
-          <li>✦ S3: {{ (current()?.automation?.step || '') === 'upload' ? 'in progress' : (current()?.mediaUrl ? 'done' : '…') }}</li>
-          <li>✦ Publish: {{ current()?.status === 'publishing' || (current()?.automation?.step) === 'publishing' ? 'in progress' : (current()?.platforms ? '…' : '…') }}</li>
-        </ul>
+        <ol class="list-unstyled mb-0 text-muted small pipeline-steps">
+          <li>1. AI: {{ (current()?.automation?.step || '') === 'ai' ? 'in progress' : stepAiDone(current()) ? 'done' : 'pending' }}</li>
+          <li>2. Video: {{ (current()?.automation?.step || '') === 'video' ? 'in progress' : stepVideoDone(current()) ? 'done' : 'pending' }}</li>
+          <li>3. Upload: {{ (current()?.automation?.step || '') === 'upload' ? 'in progress' : stepUploadDone(current()) ? 'done' : 'pending' }}</li>
+          <li>4. Publish: {{ stepPublishInProgress(current()) ? 'in progress' : (stepPublishDone(current()) ? 'done' : 'pending') }}</li>
+        </ol>
         @if (current()?.automation?.lastError) {
           <div class="text-danger small mt-2">Error: {{ current()?.automation?.lastError }}</div>
         }
@@ -78,10 +78,7 @@
                 <span
                   class="badge text-truncate d-inline-block"
                   style="max-width: 6rem"
-                  [class.text-bg-primary]="(h.pipelineStatus) === 'processing'"
-                  [class.text-bg-success]="(h.pipelineStatus) === 'completed'"
-                  [class.text-bg-warning]="(h.pipelineStatus) === 'partial'"
-                  [class.text-bg-danger]="(h.pipelineStatus) === 'failed'"
+                  [ngClass]="pipelineBadgeClass(h.pipelineStatus)"
                   >{{ h.pipelineStatus || '—' }}</span
                 >
               </td>
@@ -104,11 +101,7 @@
             <code class="text-break user-select-all">{{ h._id | slice: 0 : 8 }}…</code>
             <span
               class="badge flex-shrink-0"
-              [class.text-bg-primary]="(h.pipelineStatus) === 'processing'"
-              [class.text-bg-success]="(h.pipelineStatus) === 'completed'"
-              [class.text-bg-warning]="(h.pipelineStatus) === 'partial'"
-              [class.text-bg-danger]="(h.pipelineStatus) === 'failed'"
-              [class.text-bg-secondary]="!h.pipelineStatus"
+              [ngClass]="h.pipelineStatus ? pipelineBadgeClass(h.pipelineStatus) : 'text-bg-secondary'"
               >{{ h.pipelineStatus || '—' }}</span
             >
             <span class="text-break">{{ h.status }}</span>

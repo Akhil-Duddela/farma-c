@@ -5,6 +5,7 @@ const tokenService = require('./tokenService');
 const { getPrimaryMediaUrl } = require('../utils/platformMedia');
 const { markPlatformResult, recomputeAggregatedStatus } = require('./postStatusService');
 const logService = require('./logService');
+const { withRetry } = require('../utils/retry');
 
 function buildCaption(post) {
   const tags = (post.hashtags || [])
@@ -80,9 +81,13 @@ async function executeInstagramJob({ postId }) {
       throw new Error('Instagram account not found on post');
     }
     const caption = buildCaption(full);
-    const { instagramMediaId } = useVideo
-      ? await instagramService.publishVideoPost(acc, media, caption)
-      : await instagramService.publishImagePost(acc, media, caption);
+    const { instagramMediaId } = await withRetry(
+      () =>
+        useVideo
+          ? instagramService.publishVideoPost(acc, media, caption)
+          : instagramService.publishImagePost(acc, media, caption),
+      { maxAttempts: 2, baseDelayMs: 2000, maxDelayMs: 20000 }
+    );
 
     const fresh = await Post.findById(postId);
     if (!fresh) return { success: true, instagramMediaId };

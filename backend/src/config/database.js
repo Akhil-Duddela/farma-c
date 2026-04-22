@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const config = require('./index');
 const logger = require('../utils/logger');
+const { connectState } = require('./healthState');
 
 async function connectDatabase() {
   mongoose.set('strictQuery', true);
@@ -8,15 +9,23 @@ async function connectDatabase() {
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 10000,
   };
+  connectState.mongoose = 2;
   await mongoose.connect(config.mongoUri, opts);
+  connectState.mongoose = 1;
   logger.info('MongoDB connected');
 }
 
+mongoose.connection.on('connecting', () => {
+  connectState.mongoose = 2;
+});
+
 mongoose.connection.on('error', (err) => {
+  connectState.mongoose = 0;
   logger.error('MongoDB connection error', { err: err.message });
 });
 
 mongoose.connection.on('disconnected', () => {
+  connectState.mongoose = 0;
   logger.warn('MongoDB disconnected');
 });
 
