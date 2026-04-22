@@ -3,6 +3,11 @@ const youtubeController = require('../controllers/youtubeController');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
+
+// ✅ PUBLIC ROUTE (NO AUTH)
+router.get('/callback', youtubeController.callback);
+
+// ✅ PROTECTED ROUTES
 router.use(authenticate);
 
 router.get('/auth-url', youtubeController.authUrl);
