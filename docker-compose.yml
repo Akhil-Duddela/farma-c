@@ -1,65 +1,112 @@
+# Full stack: MongoDB, Redis, API, workers, scheduler, Angular (nginx → proxies /api to `api:4000`)
+#
+#   docker compose up -d --build
+#
+# UI:  http://localhost:8080
+# API: http://localhost:4000
+#
+# Note: Mongo/Redis hostnames are fixed to Docker service names. Copy secrets from
+# a local .env; variable substitution (JWT, AWS, Meta, Google) uses project `.env`.
+
+name: farmc
+
 services:
   mongo:
     image: mongo:7
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
-    ports:
-      - "27017:27017"
+    # No host port: avoids conflict with a local mongod. Use: docker exec -it farmc-mongo-1 mongosh
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # No host port: avoids conflict with local redis
 
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/farm_c_ai}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      NODE_ENV: production
+      PORT: "4000"
+      # In-cluster URLs (do not use localhost from a dev .env)
+      MONGODB_URI: mongodb://mongo:27017/farm_c_ai
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost,http://127.0.0.1,http://localhost:8080,http://127.0.0.1:8080,http://localhost:4200
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-farm-c-ai-media}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
       INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID:-}
       INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
+      INSTAGRAM_GRAPH_VERSION: ${INSTAGRAM_GRAPH_VERSION:-v21.0}
+      # Force Docker host port 4001 (see `ports`); add these exact URLs in Meta + Google console
+      INSTAGRAM_REDIRECT_URI: http://localhost:4001/api/instagram/callback
       YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
       YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
+      YOUTUBE_REDIRECT_URI: http://localhost:4001/api/youtube/callback
+      DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-Asia/Kolkata}
+      MAX_BULK_POSTS: ${MAX_BULK_POSTS:-30}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
+      JOB_BACKOFF_MS: ${JOB_BACKOFF_MS:-2000}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      RUN_QUEUE_IN_API: "false"
     depends_on:
-      - mongo
-      - redis
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
     ports:
-      - "4000:4000"
+      - "4001:4000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:4000/health',(r)=>{let s='';r.on('data',(c)=>s+=c);r.on('end',()=>{try{process.exit(JSON.parse(s).ok?0:1);}catch{process.exit(1);}});}).on('error',()=>process.exit(1));"
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
 
   worker-ig:
     build:
       context: ./backend
       dockerfile: Dockerfile.worker
+    command: ["node", "src/workers/instagramPublishWorker.js"]
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/farm_c_ai}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/farm_c_ai
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-farm-c-ai-media}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
       INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID:-}
       INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
+      INSTAGRAM_GRAPH_VERSION: ${INSTAGRAM_GRAPH_VERSION:-v21.0}
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
     depends_on:
-      - mongo
-      - redis
-      - api
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
   worker-yt:
     build:
@@ -67,40 +114,56 @@ services:
       dockerfile: Dockerfile.worker
     command: ["node", "src/workers/youtubePublishWorker.js"]
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/farm_c_ai}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/farm_c_ai
+      REDIS_URL: redis://redis:6379
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
       YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
       YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
     depends_on:
-      - mongo
-      - redis
-      - api
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
   scheduler:
     build:
       context: ./backend
       dockerfile: Dockerfile.scheduler
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/farm_c_ai}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/farm_c_ai
+      REDIS_URL: redis://redis:6379
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
-      - mongo
-      - redis
-      - api
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
   web:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "80:80"
+      - "8080:80"
+    restart: unless-stopped
 
 volumes:
   mongo_data:

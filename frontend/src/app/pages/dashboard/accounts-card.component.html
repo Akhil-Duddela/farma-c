@@ -1,0 +1,108 @@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-0 py-3">
+    <h2 class="h5 mb-0 fw-semibold">Connected accounts</h2>
+    <p class="text-muted small mb-0">Link Instagram and YouTube to enable publishing</p>
+  </div>
+  <div class="card-body">
+    @if (tokenAlert) {
+      <div
+        class="alert small py-2 mb-3"
+        [ngClass]="tokenAlert.type === 'danger' ? 'alert-danger' : 'alert-warning'"
+        role="alert"
+      >
+        <strong>Reconnect</strong> — {{ tokenAlert.text }}
+      </div>
+    }
+    @if (error) {
+      <div class="alert alert-warning small py-2 mb-3">{{ error }}</div>
+    }
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="fs-4">📷</span>
+          <span class="fw-medium">Instagram</span>
+          @if (igOk) {
+            <span class="badge text-bg-success">Connected</span>
+          } @else {
+            <span class="badge text-bg-secondary">Not connected</span>
+          }
+        </div>
+        @if (igAccounts.length) {
+          <ul class="list-unstyled small text-muted">
+            @for (a of igAccounts; track a._id) {
+              <li>&#64;{{ a.username || a.igUserId }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="text-muted small">Add a long-lived user token and Instagram Business / Creator id.</p>
+        }
+        <div class="border-top pt-2 mt-2 small">
+          <div class="mb-2">
+            <input
+              class="form-control form-control-sm mb-1"
+              type="text"
+              placeholder="ig user id"
+              [(ngModel)]="igForm.igUserId"
+              [ngModelOptions]="{ standalone: true }"
+            />
+            <input
+              class="form-control form-control-sm mb-1"
+              type="password"
+              placeholder="user access token"
+              [(ngModel)]="igForm.accessToken"
+              [ngModelOptions]="{ standalone: true }"
+            />
+            <input
+              class="form-control form-control-sm mb-1"
+              type="text"
+              placeholder="page id (optional)"
+              [(ngModel)]="igForm.pageId"
+              [ngModelOptions]="{ standalone: true }"
+            />
+            <input
+              class="form-control form-control-sm"
+              type="text"
+              placeholder="username (optional)"
+              [(ngModel)]="igForm.username"
+              [ngModelOptions]="{ standalone: true }"
+            />
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" [disabled]="busy" (click)="connectInstagram()">Connect Instagram</button>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="fs-4">▶</span>
+          <span class="fw-medium">YouTube</span>
+          @if (ytOk) {
+            <span class="badge text-bg-success">Connected</span>
+          } @else {
+            <span class="badge text-bg-secondary">Not connected</span>
+          }
+        </div>
+        @if (ytAccounts.length) {
+          <ul class="list-unstyled small text-muted">
+            @for (c of ytAccounts; track c._id) {
+              <li>{{ c.channelTitle }} ({{ c.channelId }})</li>
+            }
+          </ul>
+        } @else {
+          <p class="text-muted small">Open Google, approve access, then paste the <code>code</code> from the callback URL.</p>
+        }
+        <div class="border-top pt-2 mt-2 d-flex flex-column gap-2 small">
+          <div class="d-flex flex-wrap gap-1">
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="openYoutubeAuth()">Connect YouTube (browser)</button>
+          </div>
+          <input
+            class="form-control form-control-sm"
+            type="text"
+            placeholder="Authorization code (from redirect ?code=…)"
+            [(ngModel)]="ytCode"
+            [ngModelOptions]="{ standalone: true }"
+          />
+          <button type="button" class="btn btn-sm btn-primary align-self-start" [disabled]="busy" (click)="exchangeYoutubeCode()">Complete link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

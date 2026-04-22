@@ -65,19 +65,19 @@ When **both** platforms are enabled, the API enqueues **two** jobs in parallel. 
 
 ## Docker (full stack)
 
-From the project root:
+From the project root (Compose loads project `.env` for variable substitution; Mongo/Redis use in-network hostnames `mongo` and `redis`, not `localhost`):
 
 ```bash
-# Create .env in the project root with required secrets (file is gitignored).
-docker compose build
-docker compose up -d
+docker compose up -d --build
 ```
 
-- API: `http://localhost:4000`
-- Web (nginx + Angular): `http://localhost` (port 80) — proxies `/api` to the API container
-- Ensure `CORS_ORIGIN` includes `http://localhost` when using the Docker web container
+- **UI (nginx + Angular):** `http://localhost:8080` — browser calls `/api/...` on the same origin; nginx proxies to the `api` service.
+- **API (direct, health, OAuth redirects):** `http://localhost:4001` — map host **4001** → container 4000 to avoid clashing with a local dev server on 4000.
+- **OAuth:** In Meta and Google apps, set redirect URLs to `http://localhost:4001/api/instagram/callback` and `http://localhost:4001/api/youtube/callback` (these are fixed in `docker-compose.yml` for the stack).
+- **Mongo/Redis** are not published to the host by default (avoids port conflicts with local databases). Data stays in the `mongo_data` volume.
+- `CORS_ORIGIN` in Compose includes `http://localhost:8080` and `http://localhost:4200` for the Angular dev server when not using Docker.
 
-Scale workers: `docker compose up -d --scale worker=3`
+Scale Instagram workers: `docker compose up -d --scale worker-ig=2` (YouTube: `worker-yt`).
 
 ## Cloud deployment (outline)
 

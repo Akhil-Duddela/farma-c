@@ -1,5 +1,13 @@
+@use "bootstrap/scss/bootstrap" with (
+  $primary: #2f5d3a,
+  $info: #1e5f8a,
+  $success: #2a8f47,
+  $warning: #d4a00a,
+  $danger: #c23b3b
+);
+
 :root {
-  --fc-bg: #f6f4ef;
+  --fc-bg: #f4f6f3;
   --fc-surface: #ffffff;
   --fc-forest: #2f5d3a;
   --fc-earth: #5c3d2e;
@@ -7,7 +15,9 @@
   --fc-text: #1f2a24;
   --fc-muted: #5c6b61;
   --fc-border: #e2dfd7;
-  --fc-shadow: 0 10px 40px rgba(47, 93, 58, 0.08);
+  --fc-shadow: 0 8px 32px rgba(47, 93, 58, 0.08);
+  --bs-primary: #2f5d3a;
+  --bs-info: #1e5f8a;
 }
 
 *,

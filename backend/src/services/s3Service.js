@@ -27,6 +27,7 @@ function getClient() {
 }
 
 const MAX_BYTES = 8 * 1024 * 1024; // Instagram photo limit ~8MB practical
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // Short video uploads
 
 /**
  * Upload buffer to S3 with public-read or signed URL pattern.
@@ -73,4 +74,54 @@ async function deleteObjectKey(key) {
   );
 }
 
-module.exports = { uploadBuffer, deleteObjectKey, MAX_BYTES };
+/**
+ * User uploads: images (≤8MB) or short videos (≤100MB). Returns public https URL or s3:// fallback.
+ * @param {string} [keyPrefix]
+ */
+async function uploadUserMedia(buffer, originalName = '', mimetype = 'application/octet-stream', keyPrefix = 'uploads') {
+  if (!buffer || !buffer.length) {
+    throw new Error('Empty file buffer');
+  }
+  const isVideo = mimetype.startsWith('video/');
+  const isImage = mimetype.startsWith('image/');
+  if (!isVideo && !isImage) {
+    throw new Error('Only image or video uploads are allowed');
+  }
+  const max = isVideo ? MAX_VIDEO_BYTES : MAX_BYTES;
+  if (buffer.length > max) {
+    throw new Error(`File too large (max ${Math.round(max / (1024 * 1024))}MB for ${isVideo ? 'video' : 'image'})`);
+  }
+  let ext = 'bin';
+  if (mimetype.includes('mp4') || mimetype === 'video/mp4') ext = 'mp4';
+  else if (mimetype.includes('webm')) ext = 'webm';
+  else if (mimetype.includes('quicktime') || mimetype === 'video/quicktime') ext = 'mov';
+  else if (mimetype.includes('png')) ext = 'png';
+  else if (mimetype.includes('webp')) ext = 'webp';
+  else if (mimetype.includes('jpeg') || mimetype.includes('jpg')) ext = 'jpg';
+  if (!config.aws.s3Bucket) {
+    throw new Error('S3 is not configured');
+  }
+  const key = `${keyPrefix}/${uuidv4()}.${ext}`;
+  await withRetry(
+    async () => {
+      await getClient().send(
+        new PutObjectCommand({
+          Bucket: config.aws.s3Bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: mimetype,
+          CacheControl: 'public, max-age=31536000',
+        })
+      );
+    },
+    { maxAttempts: 3, baseDelayMs: 1000 }
+  );
+  if (config.aws.publicBaseUrl) {
+    const base = config.aws.publicBaseUrl.replace(/\/$/, '');
+    return `${base}/${key}`;
+  }
+  logger.warn('AWS_S3_PUBLIC_BASE_URL not set; social APIs need a public HTTPS URL to fetch media');
+  return `s3://${config.aws.s3Bucket}/${key}`;
+}
+
+module.exports = { uploadBuffer, uploadUserMedia, deleteObjectKey, MAX_BYTES, MAX_VIDEO_BYTES };

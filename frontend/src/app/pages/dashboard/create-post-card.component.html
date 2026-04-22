@@ -1,0 +1,183 @@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-0 py-3">
+    <h2 class="h5 mb-0 fw-semibold">Create post</h2>
+    <p class="text-muted small mb-0">Caption, media, platforms, and publish or schedule</p>
+  </div>
+  <div class="card-body">
+    @if (error) {
+      <div class="alert alert-danger py-2 small" role="alert">{{ error }}</div>
+    }
+    <form (ngSubmit)="$event.preventDefault()">
+      <div class="mb-3">
+        <label class="form-label" for="content">Caption / content</label>
+        <textarea
+          id="content"
+          class="form-control"
+          rows="3"
+          placeholder="What do you want to say?"
+          [formControl]="form.controls.content"
+        ></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="hashtags">Hashtags (comma separated)</label>
+        <input
+          id="hashtags"
+          type="text"
+          class="form-control"
+          placeholder="farming, poultry, organic"
+          [formControl]="form.controls.hashtagsText"
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="media">Media (image or video)</label>
+        <input
+          id="media"
+          class="form-control"
+          type="file"
+          accept="image/*,video/*"
+          (change)="onFilePicked($event)"
+        />
+        <p class="form-text small">Files upload to your S3 bucket; a public URL is used for publish.</p>
+        @if (localFile) {
+          <p class="small text-success mb-2">Selected: {{ localFile.name }}</p>
+        }
+        <div class="row g-2 align-items-stretch">
+          <div class="col-md-6 col-lg-5">
+            <div
+              class="ratio ratio-1x1 bg-body-secondary rounded border d-flex align-items-center justify-content-center overflow-hidden"
+              style="max-height: 240px"
+            >
+              @if (previewUrl) {
+                @if (localFile && localFile.type.startsWith("video/")) {
+                  <video
+                    [src]="previewUrl"
+                    class="w-100 h-100 object-fit-contain"
+                    controls
+                    playsinline
+                  ></video>
+                } @else {
+                  <img [src]="previewUrl" alt="Preview" class="object-fit-contain w-100 h-100" />
+                }
+              } @else {
+                <span class="text-muted small p-2 text-center">Media preview</span>
+              }
+            </div>
+          </div>
+        </div>
+        @if (previewUrl) {
+          <button type="button" class="btn btn-sm btn-outline-secondary mt-2" (click)="clearFile()">Clear</button>
+        }
+      </div>
+
+      <div class="mb-3">
+        <div class="form-label d-block">Platforms</div>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="pIg"
+              [formControl]="form.controls.useInstagram"
+              (change)="onPlatformChange()"
+            />
+            <label class="form-check-label" for="pIg">Instagram</label>
+          </div>
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="pYt"
+              [formControl]="form.controls.useYoutube"
+              (change)="onPlatformChange()"
+            />
+            <label class="form-check-label" for="pYt">YouTube</label>
+          </div>
+        </div>
+        @if (bothPlatforms) {
+          <div class="form-text">Both selected — only <strong>video</strong> files are allowed.</div>
+        }
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label" for="ar">Aspect ratio</label>
+          <select id="ar" class="form-select" [formControl]="form.controls.aspectRatio" (change)="onPlatformChange()">
+            <option value="1:1">1:1 (feed)</option>
+            <option value="4:5">4:5 (portrait)</option>
+            <option value="9:16">9:16 (Reel / Short)</option>
+          </select>
+        </div>
+        <div class="col-md-8">
+          <div class="form-label d-block">When to publish</div>
+          <div
+            class="btn-group w-100 flex-wrap"
+            role="group"
+            aria-label="Post now or schedule"
+          >
+            <button
+              type="button"
+              class="btn"
+              [ngClass]="form.get('postMode')?.value === 'now' ? 'btn-info text-white' : 'btn-outline-info'"
+              (click)="form.patchValue({ postMode: 'now' })"
+            >
+              Post now
+            </button>
+            <button
+              type="button"
+              class="btn"
+              [ngClass]="form.get('postMode')?.value === 'schedule' ? 'btn-warning text-dark' : 'btn-outline-warning'"
+              (click)="form.patchValue({ postMode: 'schedule' })"
+            >
+              Schedule
+            </button>
+          </div>
+          <p class="form-text small mb-0 mt-1">Choose a mode, set time if scheduling, then use the action buttons below.</p>
+        </div>
+      </div>
+
+      @if (form.controls.postMode.value === 'schedule') {
+        <div class="mb-3">
+          <label class="form-label" for="sched">Schedule date &amp; time</label>
+          <input
+            id="sched"
+            class="form-control"
+            type="datetime-local"
+            [formControl]="form.controls.scheduledAt"
+          />
+        </div>
+      }
+
+      <div class="d-flex flex-wrap gap-2 align-items-center pt-1">
+        <button
+          type="button"
+          class="btn btn-info text-white"
+          [disabled]="loading || uploadBusy"
+          (click)="submit('now')"
+        >
+          @if (loading || uploadBusy) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          }
+          Post now
+        </button>
+        <button
+          type="button"
+          class="btn btn-warning text-dark"
+          [disabled]="loading || uploadBusy"
+          (click)="submit('schedule')"
+        >
+          Schedule post
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [disabled]="loading || uploadBusy"
+          (click)="submit('draft')"
+        >
+          Save as draft
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

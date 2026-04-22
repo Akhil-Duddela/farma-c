@@ -13,6 +13,7 @@ const logRoutes = require('./routes/logs');
 const settingsRoutes = require('./routes/settings');
 const analyticsRoutes = require('./routes/analytics');
 const youtubeRoutes = require('./routes/youtube');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/logs', logRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/youtube', youtubeRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

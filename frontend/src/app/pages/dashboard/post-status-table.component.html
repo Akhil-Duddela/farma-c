@@ -1,0 +1,197 @@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-0 d-flex flex-wrap justify-content-between align-items-center py-3">
+    <div>
+      <h2 class="h5 mb-0 fw-semibold">Post status</h2>
+      <p class="text-muted small mb-0">Per-post and per-platform state</p>
+    </div>
+  </div>
+  <div class="card-body p-0 p-md-1">
+    @if (!postsList.length) {
+      <p class="px-3 py-4 text-muted">No posts yet. Create one above or connect accounts.</p>
+    } @else {
+      <div class="d-none d-lg-block table-responsive">
+        <table class="table table-hover align-middle mb-0 table-sm">
+          <thead class="table-light text-muted small text-uppercase">
+            <tr>
+              <th>Thumb</th>
+              <th>Caption</th>
+              <th>Platforms</th>
+              <th>Status</th>
+              <th>Instagram</th>
+              <th>YouTube</th>
+              <th>Error / note</th>
+              <th>Times</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of postsList; track p._id) {
+              <tr>
+                <td class="w-thumb">
+                  @if (isVideo(p) && thumb(p)) {
+                    <video
+                      [src]="thumb(p)"
+                      class="rounded object-fit-cover border"
+                      style="width: 56px; height: 56px"
+                      muted
+                      playsinline
+                      [attr.poster]="''"
+                    ></video>
+                  } @else if (thumb(p)) {
+                    <img
+                      [src]="thumb(p)"
+                      alt=""
+                      class="rounded object-fit-cover border"
+                      width="56"
+                      height="56"
+                    />
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td>
+                  <div class="text-truncate" style="max-width: 12rem" [title]="p.caption || p.content">
+                    {{ p.caption || p.content | slice: 0:80
+                    }}{{ (p.caption || p.content || "").length > 80 ? "…" : "" }}
+                  </div>
+                </td>
+                <td class="small">
+                  <span
+                    class="badge"
+                    [ngClass]="(p.platforms?.instagram?.enabled) ? 'text-bg-info' : 'text-bg-light text-muted'"
+                    >IG</span
+                  >
+                  <span
+                    class="ms-1 badge"
+                    [ngClass]="(p.platforms?.youtube?.enabled) ? 'text-bg-info' : 'text-bg-light text-muted'"
+                    >YT</span
+                  >
+                </td>
+                <td>
+                  <span [class]="statusBadgeClass(p.status) + ' text-uppercase'">{{ p.status }}</span>
+                  @if (missedSchedule(p)) {
+                    <span class="badge text-bg-warning text-dark ms-1">Past due</span>
+                  }
+                </td>
+                <td class="text-center">{{ plIcon(pl(p.platforms?.instagram)) }}</td>
+                <td class="text-center">{{ plIcon(pl(p.platforms?.youtube)) }}</td>
+                <td>
+                  <small class="text-danger">{{ anyPlatformError(p) }}</small>
+                </td>
+                <td class="small text-muted text-nowrap">
+                  @if (p.scheduledAt) {
+                    <div>Sched: {{ p.scheduledAt | date: "short" }}</div>
+                  }
+                  @if (p.postedAt) {
+                    <div>Done: {{ p.postedAt | date: "short" }}</div>
+                  }
+                  @if (p.platforms?.instagram?.enabled && p.platforms?.instagram?.publishedAt) {
+                    <div>IG: {{ p.platforms?.instagram?.publishedAt | date: "short" }}</div>
+                  }
+                  @if (p.platforms?.youtube?.enabled && p.platforms?.youtube?.publishedAt) {
+                    <div>YT: {{ p.platforms?.youtube?.publishedAt | date: "short" }}</div>
+                  }
+                </td>
+                <td>
+                  @if (canRetry(p)) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      [disabled]="retrying[p._id]"
+                      (click)="retry(p._id, $event)"
+                    >
+                      Retry
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="d-lg-none">
+        <div class="d-flex flex-column gap-2 p-2">
+          @for (p of postsList; track p._id) {
+            <div class="card card-body p-2 border">
+              <div class="d-flex gap-2">
+                @if (isVideo(p) && thumb(p)) {
+                  <video
+                    [src]="thumb(p)"
+                    class="rounded"
+                    style="width: 72px; height: 72px; object-fit: cover"
+                    muted
+                    playsinline
+                  ></video>
+                } @else if (thumb(p)) {
+                  <img [src]="thumb(p)" class="rounded" style="width: 72px; height: 72px; object-fit: cover" alt="" />
+                }
+                <div class="flex-grow-1 min-w-0">
+                  <div>
+                    <span [class]="statusBadgeClass(p.status) + ' text-uppercase'">{{ p.status }}</span>
+                    @if (missedSchedule(p)) {
+                      <span class="badge text-bg-warning text-dark ms-1">Past due</span>
+                    }
+                  </div>
+                  <p class="small text-muted mb-1 text-truncate">{{ p.caption || p.content || "—" }}</p>
+                  <div>
+                    <span>IG: {{ plIcon(pl(p.platforms?.instagram)) }}</span>
+                    <span class="ms-2">YT: {{ plIcon(pl(p.platforms?.youtube)) }}</span>
+                  </div>
+                  @if (anyPlatformError(p)) {
+                    <div class="small text-danger mt-1">{{ anyPlatformError(p) }}</div>
+                  }
+                </div>
+                @if (canRetry(p)) {
+                  <button
+                    class="btn btn-sm btn-primary align-self-start"
+                    (click)="retry(p._id, $event)"
+                    [disabled]="retrying[p._id]"
+                  >
+                    Retry
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    @if (showVideos && videoPosts().length) {
+      <div class="border-top px-3 py-3 bg-body-tertiary">
+        <h3 class="h6 text-muted text-uppercase small mb-3">Uploaded videos</h3>
+        <div class="row g-3">
+          @for (p of videoPosts(); track p._id) {
+            <div class="col-6 col-md-4 col-lg-3">
+              <div class="card border-0 shadow-sm h-100">
+                @if (thumb(p)) {
+                  <div class="ratio ratio-9x16 bg-dark">
+                    <video
+                      [src]="thumb(p)"
+                      class="w-100 h-100 object-fit-cover"
+                      controls
+                      playsinline
+                    ></video>
+                  </div>
+                }
+                <div class="card-body p-2 small">
+                  <div class="text-truncate" [title]="p.caption || ''">
+                    {{ (p.caption || "Video") | slice: 0:50 }}{{
+                      (p.caption || "").length > 50 ? "…" : ""
+                    }}
+                  </div>
+                  <div class="mt-1 text-muted">IG: {{ plIcon(pl(p.platforms?.instagram)) }} YT:
+                    {{ plIcon(pl(p.platforms?.youtube)) }}
+                  </div>
+                  <div class="small mt-1">
+                    <span [class]="statusBadgeClass(p.status) + ' text-uppercase'">{{ p.status }}</span>
+                  </div>
+                  <div class="text-muted small mt-1" title="Placeholder for future analytics">Views: —</div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
