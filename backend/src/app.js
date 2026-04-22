@@ -16,7 +16,7 @@ const youtubeRoutes = require('./routes/youtube');
 const uploadRoutes = require('./routes/upload');
 
 const app = express();
-
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(
   cors({
