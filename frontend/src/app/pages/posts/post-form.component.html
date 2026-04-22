@@ -1,82 +1,128 @@
-<div class="page-header">
-  <div>
-    <h1>{{ route.snapshot.paramMap.get('id') === 'new' ? 'New post' : 'Edit post' }}</h1>
-    <p class="muted">AI captions, media, and scheduling</p>
+<div class="container-fluid px-0">
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1>{{ route.snapshot.paramMap.get('id') === 'new' ? 'New post' : 'Edit post' }}</h1>
+      <p class="muted mb-0">AI captions, media, and scheduling</p>
+    </div>
+    <a routerLink="/posts" class="btn secondary btn-full-xs text-center">Back to list</a>
   </div>
-  <a routerLink="/posts" class="link">Back to list</a>
-</div>
 
-@if (error) {
-  <div class="alert">{{ error }}</div>
-}
+  @if (error) {
+    <div class="alert alert-danger border-0 shadow-sm mb-3" role="alert">{{ error }}</div>
+  }
 
-<div class="grid-two">
-  <div class="card pad">
-    <div class="actions-row">
-      <button type="button" class="btn secondary" (click)="runAi()" [disabled]="aiBusy">
-        {{ aiBusy ? 'Generating…' : 'Generate AI bundle' }}
-      </button>
-      <button type="button" class="btn secondary" (click)="improve()" [disabled]="aiBusy">Improve caption</button>
-      <button type="button" class="btn secondary" (click)="runMedia()" [disabled]="mediaBusy">
-        {{ mediaBusy ? 'Image…' : 'Generate image' }}
-      </button>
+  <div class="row g-3 g-lg-4">
+    <div class="col-12 col-lg-8">
+      <div class="card pad">
+        <div class="d-grid d-sm-flex flex-sm-wrap gap-2 actions-row">
+          <button type="button" class="btn secondary" (click)="runAi()" [disabled]="aiBusy">
+            {{ aiBusy ? 'Generating…' : 'Generate AI bundle' }}
+          </button>
+          <button type="button" class="btn secondary" (click)="improve()" [disabled]="aiBusy">Improve caption</button>
+          <button type="button" class="btn secondary" (click)="runMedia()" [disabled]="mediaBusy">
+            {{ mediaBusy ? 'Image…' : 'Generate image' }}
+          </button>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="mb-3">
+            <label class="form-label" for="igacc">Instagram account</label>
+            <select id="igacc" class="form-select w-100" formControlName="instagramAccountId">
+              @for (a of accounts; track a._id) {
+                <option [value]="a._id">{{ a.username || a.igUserId }} — {{ a.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="cap">Caption (Telugu + English)</label>
+            <textarea
+              id="cap"
+              class="form-control w-100"
+              rows="5"
+              formControlName="caption"
+              placeholder="Your caption"
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="ht">Hashtags (space-separated)</label>
+            <input id="ht" type="text" class="form-control w-100" formControlName="hashtagsText" />
+          </div>
+
+          <h3>Reel script</h3>
+          <div class="mb-2">
+            <label class="form-label" for="hook">Hook</label>
+            <input id="hook" type="text" class="form-control w-100" formControlName="hook" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" for="body">Body</label>
+            <textarea id="body" class="form-control w-100" rows="4" formControlName="body"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="cta">CTA</label>
+            <input id="cta" type="text" class="form-control w-100" formControlName="cta" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="media">Media URL(s) — one HTTPS URL per line (S3 public URL)</label>
+            <textarea
+              id="media"
+              class="form-control w-100"
+              rows="3"
+              formControlName="mediaUrlsText"
+              placeholder="https://..."
+            ></textarea>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label" for="ar2">Aspect ratio</label>
+              <select id="ar2" class="form-select w-100" formControlName="aspectRatio">
+                <option value="1:1">1:1 (feed)</option>
+                <option value="9:16">9:16 (reel/story)</option>
+                <option value="4:5">4:5 (portrait)</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label" for="st">Status</label>
+              <select id="st" class="form-select w-100" formControlName="status">
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
+              </select>
+            </div>
+          </div>
+
+          @if (form.getRawValue().status === 'scheduled') {
+            <div class="mb-3">
+              <label class="form-label" for="sched2">Schedule (local time)</label>
+              <input
+                id="sched2"
+                class="form-control w-100"
+                type="datetime-local"
+                formControlName="scheduledAt"
+              />
+            </div>
+          }
+
+          <div class="d-grid d-sm-block">
+            <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
+              {{ loading ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="save()">
-      <label>Instagram account</label>
-      <select formControlName="instagramAccountId">
-        @for (a of accounts; track a._id) {
-          <option [value]="a._id">{{ a.username || a.igUserId }} — {{ a.label }}</option>
-        }
-      </select>
-
-      <label>Caption (Telugu + English)</label>
-      <textarea rows="5" formControlName="caption" placeholder="Your caption"></textarea>
-
-      <label>Hashtags (space-separated)</label>
-      <input type="text" formControlName="hashtagsText" />
-
-      <h3>Reel script</h3>
-      <label>Hook</label>
-      <input type="text" formControlName="hook" />
-      <label>Body</label>
-      <textarea rows="4" formControlName="body"></textarea>
-      <label>CTA</label>
-      <input type="text" formControlName="cta" />
-
-      <label>Media URL(s) — one HTTPS URL per line (S3 public URL)</label>
-      <textarea rows="3" formControlName="mediaUrlsText" placeholder="https://..."></textarea>
-
-      <label>Aspect ratio</label>
-      <select formControlName="aspectRatio">
-        <option value="1:1">1:1 (feed)</option>
-        <option value="9:16">9:16 (reel/story)</option>
-        <option value="4:5">4:5 (portrait)</option>
-      </select>
-
-      <label>Status</label>
-      <select formControlName="status">
-        <option value="draft">Draft</option>
-        <option value="scheduled">Scheduled</option>
-      </select>
-
-      @if (form.getRawValue().status === 'scheduled') {
-        <label>Schedule (local time)</label>
-        <input type="datetime-local" formControlName="scheduledAt" />
-      }
-
-      <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
-        {{ loading ? 'Saving…' : 'Save' }}
-      </button>
-    </form>
+    <div class="col-12 col-lg-4">
+      <aside class="card pad muted small h-100">
+        <h3 class="h5">Publishing checklist</h3>
+        <ul>
+          <li>Link a Business/Creator Instagram account in Settings.</li>
+          <li>Images must be publicly reachable HTTPS URLs (configure S3 public URL).</li>
+          <li>Run the worker service so scheduled jobs publish reliably.</li>
+        </ul>
+      </aside>
+    </div>
   </div>
-
-  <aside class="card pad muted small">
-    <h3>Publishing checklist</h3>
-    <ul>
-      <li>Link a Business/Creator Instagram account in Settings.</li>
-      <li>Images must be publicly reachable HTTPS URLs (configure S3 public URL).</li>
-      <li>Run the worker service so scheduled jobs publish reliably.</li>
-    </ul>
-  </aside>
 </div>

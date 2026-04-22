@@ -1,4 +1,4 @@
-<div class="card border-0 shadow-sm mb-4">
+<div class="card border-0 shadow-sm mb-4" id="create-post">
   <div class="card-header bg-white border-0 py-3">
     <h2 class="h5 mb-0 fw-semibold">Create post</h2>
     <p class="text-muted small mb-0">Caption, media, platforms, and publish or schedule</p>
@@ -111,27 +111,27 @@
         </div>
         <div class="col-md-8">
           <div class="form-label d-block">When to publish</div>
-          <div
-            class="btn-group w-100 flex-wrap"
-            role="group"
-            aria-label="Post now or schedule"
-          >
-            <button
-              type="button"
-              class="btn"
-              [ngClass]="form.get('postMode')?.value === 'now' ? 'btn-info text-white' : 'btn-outline-info'"
-              (click)="form.patchValue({ postMode: 'now' })"
-            >
-              Post now
-            </button>
-            <button
-              type="button"
-              class="btn"
-              [ngClass]="form.get('postMode')?.value === 'schedule' ? 'btn-warning text-dark' : 'btn-outline-warning'"
-              (click)="form.patchValue({ postMode: 'schedule' })"
-            >
-              Schedule
-            </button>
+          <div class="row g-2" role="group" aria-label="Post now or schedule">
+            <div class="col-12 col-sm-6">
+              <button
+                type="button"
+                class="btn w-100"
+                [ngClass]="form.get('postMode')?.value === 'now' ? 'btn-info text-white' : 'btn-outline-info'"
+                (click)="form.patchValue({ postMode: 'now' })"
+              >
+                Post now
+              </button>
+            </div>
+            <div class="col-12 col-sm-6">
+              <button
+                type="button"
+                class="btn w-100"
+                [ngClass]="form.get('postMode')?.value === 'schedule' ? 'btn-warning text-dark' : 'btn-outline-warning'"
+                (click)="form.patchValue({ postMode: 'schedule' })"
+              >
+                Schedule
+              </button>
+            </div>
           </div>
           <p class="form-text small mb-0 mt-1">Choose a mode, set time if scheduling, then use the action buttons below.</p>
         </div>
@@ -149,7 +149,7 @@
         </div>
       }
 
-      <div class="d-flex flex-wrap gap-2 align-items-center pt-1">
+      <div class="d-grid d-sm-flex flex-sm-wrap gap-2 align-items-stretch align-items-sm-center pt-1">
         <button
           type="button"
           class="btn btn-info text-white"

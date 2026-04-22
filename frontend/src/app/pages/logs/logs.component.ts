@@ -1,5 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
 import { LogService, ActivityLog } from '../../core/services/log.service';
 
 @Component({

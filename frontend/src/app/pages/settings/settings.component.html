@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1>Settings</h1>
-    <p class="muted">Profile, timezone (IST default), and Instagram accounts</p>
+    <p class="muted mb-0">Profile, timezone (IST default), and Instagram accounts</p>
   </div>
 </div>
 
@@ -12,23 +12,28 @@
   <div class="ok">Settings saved.</div>
 }
 
-<div class="grid-two">
-  <section class="card pad">
-    <h2>Profile & automation</h2>
+<div class="row g-3 g-lg-4">
+  <section class="col-12 col-lg-6">
+    <div class="card pad h-100">
+    <h2>Profile &amp; automation</h2>
     <form [formGroup]="profile" (ngSubmit)="saveProfile()">
       <label>Name</label>
-      <input type="text" formControlName="name" />
+      <input type="text" class="form-control w-100" formControlName="name" />
       <label>Timezone</label>
-      <input type="text" formControlName="timezone" />
+      <input type="text" class="form-control w-100" formControlName="timezone" />
       <label>Daily auto posts (0 = off)</label>
-      <input type="number" formControlName="dailyAutoPostCount" />
+      <input type="number" class="form-control w-100" formControlName="dailyAutoPostCount" />
       <label>Preferred hour (IST, 0–23)</label>
-      <input type="number" formControlName="dailyAutoPostHourIST" />
-      <button class="btn primary" type="submit">Save</button>
+      <input type="number" class="form-control w-100" formControlName="dailyAutoPostHourIST" />
+      <div class="d-grid d-sm-block mt-2">
+        <button class="btn primary" type="submit">Save</button>
+      </div>
     </form>
+    </div>
   </section>
 
-  <section class="card pad">
+  <section class="col-12 col-lg-6">
+    <div class="card pad h-100">
     <h2>Instagram Graph API</h2>
     <p class="muted small">
       Use a long-lived User access token with <code>instagram_basic</code>,
@@ -37,16 +42,18 @@
     </p>
     <form [formGroup]="linkForm" (ngSubmit)="linkIg()">
       <label>Instagram Business user ID</label>
-      <input type="text" formControlName="igUserId" />
+      <input type="text" class="form-control w-100" formControlName="igUserId" />
       <label>Long-lived access token (or leave empty and use short-lived below)</label>
-      <input type="password" formControlName="accessToken" autocomplete="off" />
+      <input type="password" class="form-control w-100" formControlName="accessToken" autocomplete="off" />
       <label>Short-lived token (exchange server-side)</label>
-      <input type="password" formControlName="shortLivedToken" autocomplete="off" />
+      <input type="password" class="form-control w-100" formControlName="shortLivedToken" autocomplete="off" />
       <label>Username (optional)</label>
-      <input type="text" formControlName="username" />
+      <input type="text" class="form-control w-100" formControlName="username" />
       <label>Facebook Page ID (optional)</label>
-      <input type="text" formControlName="pageId" />
-      <button class="btn secondary" type="submit">Link account</button>
+      <input type="text" class="form-control w-100" formControlName="pageId" />
+      <div class="d-grid d-sm-block mt-2">
+        <button class="btn secondary" type="submit">Link account</button>
+      </div>
     </form>
 
     <h3>Linked accounts</h3>
@@ -63,5 +70,6 @@
         </li>
       }
     </ul>
+    </div>
   </section>
 </div>

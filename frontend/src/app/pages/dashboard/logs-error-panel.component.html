@@ -20,7 +20,7 @@
               <code class="text-body-secondary me-1">{{ l.step }}</code>
               <span [class.text-danger]="l.level === 'error' || isErrorLog(l)">{{ l.message }}</span>
             </div>
-            <div class="d-flex flex-wrap align-items-center gap-2 text-muted text-nowrap">
+            <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
               <time>{{ l.createdAt | date: "medium" }}</time>
               @if (l.postId) {
                 <button type="button" class="btn btn-sm btn-outline-primary" (click)="retryByPostId(l.postId)">Retry</button>

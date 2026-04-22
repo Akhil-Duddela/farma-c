@@ -35,10 +35,15 @@ label {
 }
 
 input {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
   border: 1px solid var(--fc-border);
   font: inherit;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .alert {

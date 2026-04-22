@@ -1,25 +1,106 @@
-<div class="layout">
-  <aside class="sidebar">
+<header
+  class="app-topbar d-lg-none d-flex align-items-center justify-content-between gap-2 px-3 py-2 shadow-sm"
+  role="banner"
+>
+  <div class="d-flex align-items-center gap-2 min-w-0">
+    <span class="brand-mark flex-shrink-0" aria-hidden="true">🌾</span>
+    <div class="min-w-0">
+      <div class="fw-bold text-truncate">Farm-C AI</div>
+      <div class="small opacity-90 d-none d-sm-block">Multi-platform</div>
+    </div>
+  </div>
+  <button
+    type="button"
+    class="btn btn-light btn-sm d-flex align-items-center justify-content-center p-2 border-0 rounded-3"
+    style="min-width: 2.75rem; min-height: 2.75rem"
+    data-bs-toggle="offcanvas"
+    data-bs-target="#fcNavOffcanvas"
+    aria-controls="fcNavOffcanvas"
+    aria-label="Open menu"
+  >
+    <span class="visually-hidden">Open menu</span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+    </svg>
+  </button>
+</header>
+
+<div
+  class="offcanvas offcanvas-start text-bg-dark fc-offcanvas"
+  tabindex="-1"
+  id="fcNavOffcanvas"
+  aria-labelledby="fcNavOffcanvasLabel"
+>
+  <div class="offcanvas-header border-bottom border-light border-opacity-25">
+    <h2 class="h5 offcanvas-title mb-0" id="fcNavOffcanvasLabel">Menu</h2>
+    <button
+      type="button"
+      class="btn-close btn-close-white"
+      data-bs-dismiss="offcanvas"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column gap-3 p-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="fs-3" aria-hidden="true">🌾</span>
+      <div>
+        <div class="fw-bold">Farm-C AI</div>
+        <div class="small text-white-50">Multi-platform</div>
+      </div>
+    </div>
+    <nav class="nav flex-column gap-1" aria-label="Main">
+      <ng-container *ngTemplateOutlet="navLinks" />
+    </nav>
+    <button type="button" class="btn btn-outline-light mt-auto" (click)="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar d-none d-lg-flex" aria-label="Main navigation">
     <div class="brand">
-      <span class="brand-mark">🌾</span>
+      <span class="brand-mark" aria-hidden="true">🌾</span>
       <div>
         <div class="brand-title">Farm-C AI</div>
         <div class="brand-sub">Multi-platform</div>
       </div>
     </div>
-    <nav class="nav">
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-        >Dashboard</a
-      >
-      <a routerLink="/posts" routerLinkActive="active">All posts</a>
-      <a routerLink="/calendar" routerLinkActive="active">Schedule</a>
-      <a routerLink="/analytics" routerLinkActive="active">Analytics</a>
-      <a routerLink="/logs" routerLinkActive="active">Logs</a>
-      <a routerLink="/settings" routerLinkActive="active">Settings</a>
+    <nav class="nav" aria-label="Main">
+      <ng-container *ngTemplateOutlet="navLinks" />
     </nav>
     <button type="button" class="btn ghost" (click)="logout()">Sign out</button>
   </aside>
-  <main class="main">
+  <main class="main flex-grow-1 min-w-0">
     <router-outlet />
   </main>
 </div>
+
+<ng-template #navLinks>
+  <a
+    routerLink="/dashboard"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: true }"
+    data-bs-dismiss="offcanvas"
+    class="offcanvas-link"
+    >Dashboard</a
+  >
+  <a routerLink="/posts" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+    >All posts</a
+  >
+  <a routerLink="/calendar" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+    >Schedule</a
+  >
+  <a routerLink="/analytics" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+    >Analytics</a
+  >
+  <a routerLink="/ai" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link"
+    >AI studio</a
+  >
+  <a routerLink="/logs" routerLinkActive="active" data-bs-dismiss="offcanvas" class="offcanvas-link">Logs</a>
+  <a
+    routerLink="/settings"
+    routerLinkActive="active"
+    data-bs-dismiss="offcanvas"
+    class="offcanvas-link"
+    >Settings</a
+  >
+</ng-template>

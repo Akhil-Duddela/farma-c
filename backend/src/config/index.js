@@ -99,4 +99,10 @@ module.exports = {
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:4200',
   /** Public SPA origin — OAuth browser redirects use this */
   frontendUrl,
+  ollama: {
+    baseUrl: (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, ''),
+    model: process.env.OLLAMA_MODEL || 'llama3',
+    /** ms */
+    timeoutMs: parseInt(process.env.OLLAMA_TIMEOUT_MS || '120000', 10),
+  },
 };

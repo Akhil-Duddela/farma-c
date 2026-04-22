@@ -1,8 +1,5 @@
-.grid.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+.stats-row {
+  margin-bottom: 0.5rem;
 }
 
 .stat .label {
@@ -27,4 +24,10 @@ h2 {
 
 ul {
   padding-left: 1.1rem;
+}
+
+.list-recent li {
+  margin-bottom: 0.4rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }

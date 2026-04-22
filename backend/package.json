@@ -9,6 +9,7 @@
     "worker": "node src/workers/instagramPublishWorker.js",
     "worker:ig": "node src/workers/instagramPublishWorker.js",
     "worker:yt": "node src/workers/youtubePublishWorker.js",
+    "worker:automation": "node src/workers/automationWorker.js",
     "scheduler": "node src/workers/schedulerWorker.js",
     "lint": "eslint src/"
   },

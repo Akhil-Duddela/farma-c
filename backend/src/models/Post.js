@@ -96,6 +96,39 @@ const postSchema = new mongoose.Schema(
       promptVersion: String,
       improved: { type: Boolean, default: false },
     },
+    /** AI automation pipeline: enhance → video → S3 → publish */
+    aiContent: {
+      title: { type: String, default: '' },
+      description: { type: String, default: '' },
+      script: { type: String, default: '' },
+      caption: { type: String, default: '' },
+      hashtags: [{ type: String, trim: true }],
+      hooks: [{ type: String }],
+      videoIdea: { type: String, default: '' },
+      rawInput: { type: String, default: '' },
+    },
+    /** Public URL to generated video (may mirror mediaUrl) */
+    videoUrl: { type: String, default: '' },
+    /**
+     * High-level pipeline state for auto-post flow.
+     * `processing` = any of ai | video | upload | publishing
+     */
+    pipelineStatus: {
+      type: String,
+      enum: ['idle', 'processing', 'completed', 'failed', 'partial'],
+      default: 'idle',
+      index: true,
+    },
+    automation: {
+      step: {
+        type: String,
+        enum: ['', 'ai', 'video', 'upload', 'publishing', 'done', 'failed'],
+        default: '',
+      },
+      lastError: { type: String, default: '' },
+      startedAt: { type: Date, default: null },
+      completedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

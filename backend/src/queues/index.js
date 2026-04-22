@@ -50,6 +50,8 @@ function getQueue(name) {
 
 const QUEUE_IG = 'instagram-publish';
 const QUEUE_YT = 'youtube-publish';
+const QUEUE_AI = 'ai-generation';
+const QUEUE_VID = 'video-generation';
 
 function getInstagramQueue() {
   return getQueue(QUEUE_IG);
@@ -59,4 +61,22 @@ function getYoutubeQueue() {
   return getQueue(QUEUE_YT);
 }
 
-module.exports = { getQueue, getInstagramQueue, getYoutubeQueue, QUEUE_IG, QUEUE_YT };
+function getAIGenerationQueue() {
+  return getQueue(QUEUE_AI);
+}
+
+function getVideoGenerationQueue() {
+  return getQueue(QUEUE_VID);
+}
+
+module.exports = {
+  getQueue,
+  getInstagramQueue,
+  getYoutubeQueue,
+  getAIGenerationQueue,
+  getVideoGenerationQueue,
+  QUEUE_IG,
+  QUEUE_YT,
+  QUEUE_AI,
+  QUEUE_VID,
+};

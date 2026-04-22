@@ -4,6 +4,7 @@ import { CreatePostCardComponent } from './create-post-card.component';
 import { PostStatusTableComponent } from './post-status-table.component';
 import { AccountsCardComponent } from './accounts-card.component';
 import { LogsErrorPanelComponent } from './logs-error-panel.component';
+import { AutomationPipelineComponent } from './automation-pipeline.component';
 import { PostService } from '../../core/services/post.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { CommonModule } from '@angular/common';
@@ -17,6 +18,7 @@ import { CommonModule } from '@angular/common';
     PostStatusTableComponent,
     AccountsCardComponent,
     LogsErrorPanelComponent,
+    AutomationPipelineComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

@@ -1,5 +1,5 @@
+import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PostService, Post } from '../../core/services/post.service';
@@ -7,7 +7,7 @@ import { PostService, Post } from '../../core/services/post.service';
 @Component({
   selector: 'app-post-list',
   standalone: true,
-  imports: [RouterLink, FormsModule, DatePipe],
+  imports: [CommonModule, RouterLink, FormsModule, DatePipe],
   templateUrl: './post-list.component.html',
   styleUrl: './post-list.component.scss',
 })
@@ -30,5 +30,17 @@ export class PostListComponent implements OnInit {
   delete(id: string): void {
     if (!confirm('Delete this post?')) return;
     this.api.delete(id).subscribe(() => this.load());
+  }
+
+  statusBadgeClass(p: Post): string {
+    const m: Record<string, string> = {
+      posted: 'text-bg-success',
+      draft: 'text-bg-secondary',
+      failed: 'text-bg-danger',
+      scheduled: 'text-bg-warning text-dark',
+      publishing: 'text-bg-info',
+      partial: 'text-bg-warning',
+    };
+    return m[p.status] ?? 'text-bg-light text-dark';
   }
 }

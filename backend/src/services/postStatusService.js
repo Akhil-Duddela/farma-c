@@ -1,6 +1,33 @@
 const { logPlatform } = require('./logService');
 
 /**
+ * When the automation pipeline is at publish, mirror aggregate `post.status` to `pipelineStatus`.
+ * @param {import('mongoose').Document} post
+ */
+function syncPipelineFields(post) {
+  if (!post.automation) return;
+  if (!post.pipelineStatus || post.pipelineStatus === 'idle') return;
+  const st = String(post.automation.step || '');
+  if (st && !['publishing', 'done', ''].includes(st)) {
+    return;
+  }
+  if (post.status === 'posted' && post.pipelineStatus === 'processing') {
+    post.pipelineStatus = 'completed';
+    post.automation.step = 'done';
+    post.automation.completedAt = post.automation.completedAt || new Date();
+  } else if (post.status === 'partial') {
+    post.pipelineStatus = 'partial';
+    post.automation.step = 'done';
+    post.automation.completedAt = post.automation.completedAt || new Date();
+  } else if (post.status === 'failed' && st === 'publishing') {
+    post.pipelineStatus = 'failed';
+    post.automation.completedAt = post.automation.completedAt || new Date();
+  }
+  post.markModified('automation');
+  post.markModified('pipelineStatus');
+}
+
+/**
  * Recompute high-level `post.status` from per-platform `platforms.*.status`.
  */
 function recomputeAggregatedStatus(post) {
@@ -52,6 +79,8 @@ function recomputeAggregatedStatus(post) {
       post.failureReason = 'All enabled platforms were skipped';
     }
   }
+
+  syncPipelineFields(post);
 }
 
 /**
@@ -77,4 +106,4 @@ async function markPlatformResult(post, platform, status, error = '', userId) {
   await logPlatform({ postId: post._id, userId, platform, status, error });
 }
 
-module.exports = { recomputeAggregatedStatus, markPlatformResult };
+module.exports = { recomputeAggregatedStatus, markPlatformResult, syncPipelineFields };

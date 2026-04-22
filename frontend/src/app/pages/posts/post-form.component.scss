@@ -1,16 +1,3 @@
-.grid-two {
-  display: grid;
-  grid-template-columns: 1fr minmax(240px, 320px);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-@media (max-width: 960px) {
-  .grid-two {
-    grid-template-columns: 1fr;
-  }
-}
-
 .pad {
   padding: 1.25rem;
 }
@@ -20,15 +7,14 @@ form {
   flex-direction: column;
   gap: 0.65rem;
   margin-top: 1rem;
+  min-width: 0;
 }
 
 textarea,
-input,
+input:not([type='checkbox']):not([type='radio']),
 select {
-  font: inherit;
-  border-radius: 10px;
-  border: 1px solid var(--fc-border);
-  padding: 0.55rem 0.65rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 h3 {
@@ -49,7 +35,7 @@ aside ul {
   margin: 0.5rem 0 0;
 }
 
-.alert {
+:host .alert {
   background: #fdecea;
   color: #b42318;
   padding: 0.65rem 0.85rem;

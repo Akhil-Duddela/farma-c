@@ -135,6 +135,37 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Ollama + FFmpeg: point OLLAMA_BASE_URL at host (e.g. http://host.docker.internal:11434) if Ollama runs on the host
+  worker-automation:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    command: ["node", "src/workers/automationWorker.js"]
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/farm_c_ai
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3}
+      OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-120000}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
+      FFMPEG_TIMEOUT_MS: "300000"
+    depends_on:
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   scheduler:
     build:
       context: ./backend

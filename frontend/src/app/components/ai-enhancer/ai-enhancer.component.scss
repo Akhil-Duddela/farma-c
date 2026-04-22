@@ -1,0 +1,43 @@
+.ai-back-link {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .ai-back-link {
+    width: auto;
+  }
+}
+
+.ai-enhancer {
+  .pre-wrap {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .pre-wrap:empty {
+    min-height: 0;
+  }
+
+  .hashtag-badges {
+    min-width: 0;
+  }
+
+  .hashtag-badges .badge {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  @media (max-width: 576px) {
+    h1 {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+// Bootstrap card header body contrast
+:host .card-header {
+  font-size: 0.95rem;
+  font-weight: 600;
+}

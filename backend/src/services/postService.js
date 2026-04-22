@@ -6,6 +6,8 @@ const { getInstagramQueue, getYoutubeQueue } = require('../queues');
 const { parsePlatformFlags, assertInstagramAccount, assertYouTubeAccount } = require('../utils/postPayload');
 const { recomputeAggregatedStatus } = require('./postStatusService');
 const logService = require('./logService');
+const InstagramAccount = require('../models/InstagramAccount');
+const YouTubeAccount = require('../models/YouTubeAccount');
 
 const VIDEO = new Set(['video', 'reel']);
 
@@ -116,6 +118,106 @@ async function createPost(userId, body) {
 }
 
 /**
+ * Create a draft post for the full AI → video → publish pipeline (no media until video step).
+ * @param {import('mongoose').Types.ObjectId} userId
+ * @param {{ input: string, platforms: { instagram?: boolean, youtube?: boolean }, instagramAccountId?: string, youtubeAccountId?: string }} opts
+ */
+async function createAutomationPost(userId, opts) {
+  const { input, platforms: pl = {} } = opts;
+  const flags = {
+    instagram: pl.instagram === true,
+    youtube: pl.youtube === true,
+  };
+  if (!flags.instagram && !flags.youtube) {
+    const err = new Error('At least one of instagram or youtube must be true');
+    err.status = 400;
+    throw err;
+  }
+  const raw = (input && String(input).trim()) || '';
+  if (!raw) {
+    const e = new Error('input is required');
+    e.status = 400;
+    throw e;
+  }
+  if (raw.length > 8000) {
+    const e = new Error('input is too long');
+    e.status = 400;
+    throw e;
+  }
+
+  let igId = null;
+  let ytId = null;
+  if (flags.instagram) {
+    const id = opts.instagramAccountId || (await InstagramAccount.findOne({ userId, isDefault: true }))?._id;
+    if (!id) {
+      const e = new Error('Link an Instagram account or pass instagramAccountId');
+      e.status = 400;
+      throw e;
+    }
+    const a = await assertInstagramAccount(String(id), userId);
+    igId = a._id;
+  }
+  if (flags.youtube) {
+    const id = opts.youtubeAccountId || (await YouTubeAccount.findOne({ userId, isDefault: true }))?._id;
+    if (!id) {
+      const e = new Error('Link a YouTube account or pass youtubeAccountId');
+      e.status = 400;
+      throw e;
+    }
+    const a = await assertYouTubeAccount(String(id), userId);
+    ytId = a._id;
+  }
+
+  const idempotencyKey = uuidv4();
+  const platforms = {
+    instagram: {
+      enabled: flags.instagram,
+      status: flags.instagram ? 'pending' : 'skipped',
+      error: '',
+      jobId: '',
+    },
+    youtube: {
+      enabled: flags.youtube,
+      status: flags.youtube ? 'pending' : 'skipped',
+      error: '',
+      jobId: '',
+    },
+  };
+
+  const post = await Post.create({
+    userId,
+    instagramAccountId: igId,
+    youtubeAccountId: ytId,
+    content: raw,
+    caption: raw.slice(0, 200),
+    hashtags: [],
+    mediaUrl: '',
+    mediaUrls: [],
+    mediaType: 'video',
+    aspectRatio: '9:16',
+    platforms,
+    status: 'draft',
+    scheduledAt: null,
+    idempotencyKey,
+    generationMeta: { model: 'ollama-automation', promptVersion: '1' },
+    pipelineStatus: 'processing',
+    automation: {
+      step: 'ai',
+      lastError: '',
+      startedAt: new Date(),
+    },
+  });
+
+  await logService.logEntry({
+    userId,
+    postId: post._id,
+    step: 'automation.create',
+    message: 'Automation pipeline post created (draft) — waiting for AI job',
+  });
+  return post;
+}
+
+/**
  * V2: maps POST /posts/create { content, mediaUrl, platforms: { instagram, youtube } }
  * into internal create.
  */
@@ -153,6 +255,10 @@ async function updatePost(userId, id, body) {
     'scheduledAt',
     'contentHash',
     'generationMeta',
+    'aiContent',
+    'videoUrl',
+    'pipelineStatus',
+    'automation',
   ];
   baseUpdatable.forEach((k) => {
     if (body[k] !== undefined) {
@@ -226,6 +332,9 @@ async function deletePost(userId, id) {
 async function listPosts(userId, query = {}) {
   const filter = { userId };
   if (query.status) filter.status = query.status;
+  if (query.automation === '1' || query.automation === 'true') {
+    filter.pipelineStatus = { $in: ['processing', 'completed', 'failed', 'partial'] };
+  }
   return Post.find(filter)
     .sort({ createdAt: -1 })
     .limit(parseInt(query.limit || '50', 10))
@@ -407,6 +516,7 @@ async function ensureAccount(userId, instagramAccountId) {
 module.exports = {
   createPost,
   createPostV2,
+  createAutomationPost,
   updatePost,
   deletePost,
   listPosts,

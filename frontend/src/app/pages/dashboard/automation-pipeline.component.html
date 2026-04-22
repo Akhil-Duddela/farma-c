@@ -1,0 +1,132 @@
+<div class="card border-0 shadow-sm mb-4" id="automation-pipeline">
+  <div class="card-header bg-white border-0 py-3">
+    <h2 class="h5 mb-0 fw-semibold">🚀 Auto post pipeline</h2>
+    <p class="text-muted small mb-0">AI (Ollama) → video (FFmpeg) → S3 → Instagram &amp; YouTube. Requires Ollama, ffmpeg, S3, and workers.</p>
+  </div>
+  <div class="card-body">
+    @if (error) {
+      <div class="alert alert-warning small py-2">{{ error }}</div>
+    }
+    <form [formGroup]="form" (ngSubmit)="run()" class="mb-3">
+      <label class="form-label" for="auto-idea">Idea / topic</label>
+      <textarea
+        id="auto-idea"
+        class="form-control mb-2"
+        rows="2"
+        formControlName="input"
+        placeholder="e.g. desi chicken care in monsoon"
+      ></textarea>
+      <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="aig" formControlName="useInstagram" />
+          <label class="form-check-label small" for="aig">Instagram</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="ayt" formControlName="useYoutube" />
+          <label class="form-check-label small" for="ayt">YouTube Shorts</label>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-pipeline" type="submit" [disabled]="busy">
+        @if (busy) {
+          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        }
+        Generate &amp; auto post
+      </button>
+    </form>
+
+    @if (activeId && current()) {
+      <div class="border rounded p-3 small mb-3 bg-body-tertiary">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <strong>Run</strong> <code class="small">#{{ activeId }}</code>
+          <span class="badge" [class.text-bg-info]="(current()?.pipelineStatus) === 'processing'">
+            {{ current()?.pipelineStatus || '—' }}
+          </span>
+          <span class="text-muted">step: {{ current()?.automation?.step || '—' }}</span>
+        </div>
+        <ul class="list-unstyled mb-0 text-muted">
+          <li>✦ AI: {{ (current()?.automation?.step || '') === 'ai' ? 'in progress' : (current()?.aiContent?.title ? 'done' : '…') }}</li>
+          <li>✦ Video: {{ (current()?.automation?.step || '') === 'video' ? 'in progress' : (current()?.videoUrl || current()?.mediaUrl ? 'done' : '…') }}</li>
+          <li>✦ S3: {{ (current()?.automation?.step || '') === 'upload' ? 'in progress' : (current()?.mediaUrl ? 'done' : '…') }}</li>
+          <li>✦ Publish: {{ current()?.status === 'publishing' || (current()?.automation?.step) === 'publishing' ? 'in progress' : (current()?.platforms ? '…' : '…') }}</li>
+        </ul>
+        @if (current()?.automation?.lastError) {
+          <div class="text-danger small mt-2">Error: {{ current()?.automation?.lastError }}</div>
+        }
+        @if (current()?.aiContent?.title) {
+          <div class="mt-2 fw-medium">{{ current()!.aiContent?.title }}</div>
+        }
+      </div>
+    }
+
+    <h3 class="h6 text-muted">Recent runs</h3>
+    <div class="d-none d-md-block table-responsive">
+      <table class="table table-sm align-middle small">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Pipeline</th>
+            <th>Post</th>
+            <th>IG</th>
+            <th>YT</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of history; track h._id) {
+            <tr>
+              <td><code class="small text-break">{{ h._id | slice: 0 : 8 }}…</code></td>
+              <td>
+                <span
+                  class="badge text-truncate d-inline-block"
+                  style="max-width: 6rem"
+                  [class.text-bg-primary]="(h.pipelineStatus) === 'processing'"
+                  [class.text-bg-success]="(h.pipelineStatus) === 'completed'"
+                  [class.text-bg-warning]="(h.pipelineStatus) === 'partial'"
+                  [class.text-bg-danger]="(h.pipelineStatus) === 'failed'"
+                  >{{ h.pipelineStatus || '—' }}</span
+                >
+              </td>
+              <td class="text-break">{{ h.status }}</td>
+              <td class="text-break">{{ h.platforms?.instagram?.status ?? '—' }} {{ h.platforms?.instagram?.error }}</td>
+              <td class="text-break">{{ h.platforms?.youtube?.status ?? '—' }} {{ h.platforms?.youtube?.error }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-muted">No automation runs yet.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="d-md-none d-flex flex-column gap-2 small">
+      @for (h of history; track h._id) {
+        <div class="card border bg-body-tertiary p-2">
+          <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
+            <code class="text-break user-select-all">{{ h._id | slice: 0 : 8 }}…</code>
+            <span
+              class="badge flex-shrink-0"
+              [class.text-bg-primary]="(h.pipelineStatus) === 'processing'"
+              [class.text-bg-success]="(h.pipelineStatus) === 'completed'"
+              [class.text-bg-warning]="(h.pipelineStatus) === 'partial'"
+              [class.text-bg-danger]="(h.pipelineStatus) === 'failed'"
+              [class.text-bg-secondary]="!h.pipelineStatus"
+              >{{ h.pipelineStatus || '—' }}</span
+            >
+            <span class="text-break">{{ h.status }}</span>
+          </div>
+          <div class="row g-1 mt-1 text-muted">
+            <div class="col-6 text-break min-w-0">IG: {{ h.platforms?.instagram?.status ?? '—' }}</div>
+            <div class="col-6 text-break min-w-0">YT: {{ h.platforms?.youtube?.status ?? '—' }}</div>
+            @if (h.platforms?.instagram?.error) {
+              <div class="col-12 text-danger small">IG: {{ h.platforms?.instagram?.error }}</div>
+            }
+            @if (h.platforms?.youtube?.error) {
+              <div class="col-12 text-danger small">YT: {{ h.platforms?.youtube?.error }}</div>
+            }
+          </div>
+        </div>
+      } @empty {
+        <p class="text-muted">No automation runs yet.</p>
+      }
+    </div>
+  </div>
+</div>

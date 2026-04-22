@@ -5,6 +5,7 @@ import { PostService, CreatePostV2Body } from '../../core/services/post.service'
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
 import { YoutubeService, YoutubeAccount } from '../../core/services/youtube.service';
 import { UploadService } from '../../core/services/upload.service';
+import { CreatePostPrefillService } from '../../core/services/create-post-prefill.service';
 
 type MediaKind = 'image' | 'video' | 'reel';
 
@@ -21,6 +22,7 @@ export class CreatePostCardComponent implements OnInit {
   private readonly ig = inject(InstagramService);
   private readonly yt = inject(YoutubeService);
   private readonly upload = inject(UploadService);
+  private readonly prefill = inject(CreatePostPrefillService);
 
   /** Emitted when a post was created (parent refreshes) */
   readonly postCreated = output<void>();
@@ -47,6 +49,13 @@ export class CreatePostCardComponent implements OnInit {
   ngOnInit(): void {
     this.ig.list().subscribe((a) => (this.igAccounts = a));
     this.yt.list().subscribe((a) => (this.ytAccounts = a));
+    const fromAi = this.prefill.consume();
+    if (fromAi) {
+      this.form.patchValue({
+        content: fromAi.content,
+        hashtagsText: fromAi.hashtagsText,
+      });
+    }
   }
 
   get bothPlatforms(): boolean {

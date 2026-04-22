@@ -24,6 +24,7 @@
   <div class="row g-4">
     <div class="col-12 col-xl-8 d-flex flex-column">
       <app-accounts-card (connected)="onAccountsChange()" />
+      <app-automation-pipeline (pipelineEvent)="onPostDataChanged()" />
       <app-create-post-card (postCreated)="onPostCreated()" />
     </div>
     <div class="col-12 col-xl-4 d-flex">

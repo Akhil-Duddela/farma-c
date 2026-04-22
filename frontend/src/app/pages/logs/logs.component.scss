@@ -33,6 +33,14 @@ th {
   font-size: 0.85rem;
 }
 
+/* Stack cards — avoid min-width: 0 overflow */
+.log-card,
+.log-message {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+
 .badge {
   font-size: 0.7rem;
   padding: 0.15rem 0.45rem;
@@ -40,11 +48,12 @@ th {
   background: #eef4ec;
 }
 
-.badge.error {
+:host .badge.error {
   background: #fdecea;
   color: #b42318;
 }
-.badge.warn {
+
+:host .badge.warn {
   background: #fff7e6;
   color: #8a5a00;
 }

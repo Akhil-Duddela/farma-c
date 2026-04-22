@@ -5,3 +5,11 @@
 .w-thumb {
   width: 4.5rem;
 }
+
+.post-card-caption {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 6.5rem;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}

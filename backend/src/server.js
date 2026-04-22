@@ -4,7 +4,8 @@ const config = require('./config');
 const { connectDatabase } = require('./config/database');
 const logger = require('./utils/logger');
 const postService = require('./services/postService');
-const { getInstagramQueue, getYoutubeQueue } = require('./queues');
+const { getInstagramQueue, getYoutubeQueue, getAIGenerationQueue, getVideoGenerationQueue } = require('./queues');
+const { processAIJob, processVideoJob } = require('./services/automationPipelineService');
 const { executeInstagramJob } = require('./services/instagramPlatformService');
 const { executeYoutubeJob } = require('./services/youtubePlatformService');
 const { startDailyPostsCron } = require('./services/dailyPostsService');
@@ -31,7 +32,10 @@ async function start() {
       if (job.data.platform && job.data.platform !== 'youtube') return { skipped: true };
       return executeYoutubeJob({ postId: job.data.postId });
     });
-    logger.info('Bull processors attached to API (Instagram + YouTube)');
+    const autoConc = Math.max(1, parseInt(process.env.AUTOMATION_WORKER_CONCURRENCY || '2', 10));
+    getAIGenerationQueue().process('enhance', autoConc, processAIJob);
+    getVideoGenerationQueue().process('render', 1, processVideoJob);
+    logger.info('Bull processors attached to API (Instagram + YouTube + automation)');
   }
 
   startDailyPostsCron();

@@ -35,6 +35,24 @@ export interface Post {
   contentHash?: string;
   platforms?: { instagram: PlatformState; youtube: PlatformState };
   analytics?: { likes: number; reach: number; impressions: number; lastSyncedAt?: string | null };
+  /** Full AI → video → publish pipeline */
+  pipelineStatus?: 'idle' | 'processing' | 'completed' | 'failed' | 'partial';
+  videoUrl?: string;
+  aiContent?: {
+    title?: string;
+    description?: string;
+    script?: string;
+    caption?: string;
+    hashtags?: string[];
+    videoIdea?: string;
+    rawInput?: string;
+  };
+  automation?: {
+    step: string;
+    lastError?: string;
+    startedAt?: string | null;
+    completedAt?: string | null;
+  };
 }
 
 export interface CreatePostV2Body {

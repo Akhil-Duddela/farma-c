@@ -1,51 +1,116 @@
-<div class="page-header">
-  <div>
-    <h1>Posts</h1>
-    <p class="muted">All posts (use Dashboard for create &amp; status)</p>
+<div class="container-fluid px-0">
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1>Posts</h1>
+      <p class="muted mb-0">All posts (use Dashboard for create &amp; status)</p>
+    </div>
+    <a class="btn primary btn-full-xs text-center" routerLink="/dashboard">Dashboard</a>
   </div>
-  <a class="btn primary" routerLink="/dashboard">Dashboard</a>
-</div>
 
-<div class="toolbar card">
-  <label class="inline">
-    Status
-    <select [(ngModel)]="filter" (ngModelChange)="load()">
-      <option value="">All</option>
-      <option value="draft">Draft</option>
-      <option value="scheduled">Scheduled</option>
-      <option value="posted">Posted</option>
-      <option value="failed">Failed</option>
-      <option value="publishing">Publishing</option>
-      <option value="partial">Partial</option>
-    </select>
-  </label>
-</div>
+  <div class="card mb-3">
+    <div class="card-body py-2 py-sm-3 d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2 gap-sm-3">
+      <label class="d-flex flex-column flex-sm-row align-items-stretch align-sm-center gap-1 gap-sm-2 small text-muted mb-0 flex-grow-1">
+        <span class="text-nowrap">Status</span>
+        <select
+          class="form-select form-select-sm w-100 w-sm-auto"
+          style="min-height: 2.75rem"
+          [(ngModel)]="filter"
+          (ngModelChange)="load()"
+        >
+          <option value="">All</option>
+          <option value="draft">Draft</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="posted">Posted</option>
+          <option value="failed">Failed</option>
+          <option value="publishing">Publishing</option>
+          <option value="partial">Partial</option>
+        </select>
+      </label>
+    </div>
+  </div>
 
-<div class="card table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Status</th>
-        <th>Caption</th>
-        <th>Scheduled</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
+  @if (posts.length) {
+    <div class="d-none d-md-block table-responsive rounded-3 border bg-white shadow-sm">
+      <table class="table table-hover align-middle mb-0 post-table">
+        <thead class="table-light text-muted small text-uppercase">
+          <tr>
+            <th scope="col">Status</th>
+            <th scope="col">Caption</th>
+            <th scope="col" class="d-none d-lg-table-cell">Platforms</th>
+            <th scope="col">Scheduled</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of posts; track p._id) {
+            <tr>
+              <td>
+                <span class="badge rounded-pill" [ngClass]="statusBadgeClass(p)">{{ p.status }}</span>
+              </td>
+              <td>
+                <div class="post-caption text-break" [title]="p.caption || ''">
+                  {{ p.caption || '—' }}
+                </div>
+              </td>
+              <td class="d-none d-lg-table-cell small">
+                <span
+                  class="badge me-1"
+                  [ngClass]="p.platforms?.instagram?.enabled ? 'text-bg-info' : 'text-bg-light text-muted'"
+                  >IG</span
+                >
+                <span
+                  class="badge"
+                  [ngClass]="p.platforms?.youtube?.enabled ? 'text-bg-info' : 'text-bg-light text-muted'"
+                  >YT</span
+                >
+              </td>
+              <td class="small text-muted text-nowrap">
+                {{ p.scheduledAt | date: 'medium' : undefined : 'Asia/Kolkata' }}
+              </td>
+              <td class="text-end text-nowrap">
+                <a class="link me-2" [routerLink]="['/posts', p._id, 'edit']">Edit</a>
+                <button type="button" class="link danger btn btn-link p-0 align-baseline" (click)="delete(p._id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-md-none d-flex flex-column gap-2">
       @for (p of posts; track p._id) {
-        <tr>
-          <td><span class="badge" [class]="p.status">{{ p.status }}</span></td>
-          <td class="clip">{{ p.caption || '—' }}</td>
-          <td class="muted">{{ p.scheduledAt | date: 'medium' : undefined : 'Asia/Kolkata' }}</td>
-          <td class="actions">
-            <a class="link" [routerLink]="['/posts', p._id, 'edit']">Edit</a>
-            <button type="button" class="link danger" (click)="delete(p._id)">Delete</button>
-          </td>
-        </tr>
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <span class="badge rounded-pill" [ngClass]="statusBadgeClass(p)">{{ p.status }}</span>
+              <div class="d-flex flex-wrap align-items-center gap-2 small text-muted">
+                <span
+                  class="badge"
+                  [ngClass]="p.platforms?.instagram?.enabled ? 'text-bg-info' : 'text-bg-light'"
+                  >IG</span
+                >
+                <span
+                  class="badge"
+                  [ngClass]="p.platforms?.youtube?.enabled ? 'text-bg-info' : 'text-bg-light'"
+                  >YT</span
+                >
+              </div>
+            </div>
+            <p class="small mb-2 text-break word-wrap">{{ p.caption || '—' }}</p>
+            <p class="small text-muted mb-3">
+              {{ p.scheduledAt | date: 'medium' : undefined : 'Asia/Kolkata' }}
+            </p>
+            <div class="d-grid gap-2">
+              <a class="btn btn-outline-primary" [routerLink]="['/posts', p._id, 'edit']">Edit</a>
+              <button type="button" class="btn btn-outline-danger" (click)="delete(p._id)">Delete</button>
+            </div>
+          </div>
+        </div>
       }
-    </tbody>
-  </table>
-  @if (!posts.length) {
-    <p class="muted pad">No posts match this filter.</p>
+    </div>
+  } @else {
+    <p class="muted p-3 card">No posts match this filter.</p>
   }
 </div>

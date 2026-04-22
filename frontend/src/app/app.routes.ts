@@ -11,6 +11,7 @@ import { LogsComponent } from './pages/logs/logs.component';
 import { SettingsComponent } from './pages/settings/settings.component';
 import { AnalyticsComponent } from './pages/analytics/analytics.component';
 import { YoutubeOauthResultComponent } from './pages/youtube/youtube-oauth-result.component';
+import { AiEnhancerComponent } from './components/ai-enhancer/ai-enhancer.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -30,6 +31,7 @@ export const routes: Routes = [
       { path: 'settings', component: SettingsComponent },
       { path: 'analytics', component: AnalyticsComponent },
       { path: 'youtube/oauth-result', component: YoutubeOauthResultComponent },
+      { path: 'ai', component: AiEnhancerComponent },
     ],
   },
   { path: '**', redirectTo: '' },

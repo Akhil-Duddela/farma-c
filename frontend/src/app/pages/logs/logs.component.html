@@ -1,29 +1,50 @@
-<div class="page-header">
-  <div>
-    <h1>Activity logs</h1>
-    <p class="muted">AI generation, publishing, and system events</p>
+<div class="container-fluid px-0 pb-3">
+  <div class="page-header">
+    <div>
+      <h1>Activity logs</h1>
+      <p class="muted mb-0">AI generation, publishing, and system events</p>
+    </div>
   </div>
-</div>
 
-<div class="card table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Time</th>
-        <th>Level</th>
-        <th>Step</th>
-        <th>Message</th>
-      </tr>
-    </thead>
-    <tbody>
+  @if (logs.length) {
+    <div class="d-none d-md-block table-responsive rounded-3 border bg-white shadow-sm">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="text-muted table-light small text-uppercase">
+          <tr>
+            <th>Time</th>
+            <th>Level</th>
+            <th>Step</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of logs; track l._id) {
+            <tr>
+              <td class="muted text-nowrap">{{ l.createdAt | date: 'medium' }}</td>
+              <td><span class="badge" [class]="l.level">{{ l.level }}</span></td>
+              <td class="mono small">{{ l.step }}</td>
+              <td class="text-break small">{{ l.message }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-md-none d-flex flex-column gap-2">
       @for (l of logs; track l._id) {
-        <tr>
-          <td class="muted nowrap">{{ l.createdAt | date: 'medium' }}</td>
-          <td><span class="badge" [class]="l.level">{{ l.level }}</span></td>
-          <td class="mono">{{ l.step }}</td>
-          <td>{{ l.message }}</td>
-        </tr>
+        <div class="card border-0 shadow-sm log-card">
+          <div class="card-body py-3 small">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <span class="badge" [class]="l.level">{{ l.level }}</span>
+              <time class="text-muted text-nowrap">{{ l.createdAt | date: 'medium' }}</time>
+            </div>
+            <code class="d-block text-body-secondary small mb-2 text-break">{{ l.step }}</code>
+            <p class="mb-0 text-break log-message">{{ l.message }}</p>
+          </div>
+        </div>
       }
-    </tbody>
-  </table>
+    </div>
+  } @else {
+    <p class="muted p-3 card">No log entries yet.</p>
+  }
 </div>
