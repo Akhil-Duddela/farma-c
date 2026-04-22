@@ -46,12 +46,7 @@ function authUrl(req, res) {
   }
 }
 
-const frontendBase =
-  process.env.FRONTEND_URL ||
-  (() => {
-    const o = (config.corsOrigin || 'http://localhost:4200').split(',')[0];
-    return o.trim() || 'http://localhost:4200';
-  })();
+const frontendBase = config.frontendUrl;
 
 /**
  * Google redirect after consent — must match YOUTUBE_REDIRECT_URI (e.g. .../api/youtube/callback).

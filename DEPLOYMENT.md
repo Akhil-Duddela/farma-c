@@ -89,6 +89,16 @@ Scale Instagram workers: `docker compose up -d --scale worker-ig=2` (YouTube: `w
 6. Store secrets in a **secrets manager** (not plain env files in production).
 7. Enable **TLS** everywhere; restrict security groups; rotate Meta and OpenAI keys.
 
+### YouTube OAuth + split front end / API (e.g. Render)
+
+If the UI and API are on different hosts (e.g. `https://farma-c-ui.onrender.com` and `https://farma-c.onrender.com`), the **API** must know the public SPA URL. After Google redirects to your API, the user is sent to `/youtube/oauth-result` on **that** URL.
+
+- Set on the **API** service: **`FRONTEND_URL=`**`https://your-ui-host` (no trailing slash). example: `https://farma-c-ui.onrender.com`.
+- Set **`CORS_ORIGIN=`**`https://your-ui-host` (or include it, comma-separated, if you list multiple origins).
+- In **Google Cloud** → OAuth client → **Authorized redirect URIs**, the callback must be your **API** URL, e.g. `https://farma-c.onrender.com/api/youtube/callback` (not the UI host).
+
+If `FRONTEND_URL` is missing and `CORS_ORIGIN` lists `http://localhost:4200` first, browser OAuth can incorrectly redirect to localhost.
+
 ## Operations
 
 - **Dead-letter jobs**: stored in MongoDB `deadletterjobs` after max Bull attempts.
