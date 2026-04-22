@@ -93,16 +93,21 @@ async function createOrUpdateAccountFromTokens({ userId, accessToken, refreshTok
   return doc;
 }
 
-function getAuthUrl() {
+/**
+ * @param {string} [state] - Round-trip to OAuth callback (e.g. `uid:<userId>`) so the browser redirect can be tied to a user
+ */
+function getAuthUrl(state) {
   const c = getOAuth2Client();
-  return c.generateAuthUrl({
+  const params = {
     access_type: 'offline',
     scope: [
       'https://www.googleapis.com/auth/youtube.upload',
       'https://www.googleapis.com/auth/youtube.readonly',
     ],
     prompt: 'consent',
-  });
+  };
+  if (state) params.state = state;
+  return c.generateAuthUrl(params);
 }
 
 /**
