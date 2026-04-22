@@ -21,8 +21,8 @@
 
 ```bash
 cd backend
-cp ../.env.example ../.env
-# Edit ../.env — set MONGODB_URI, REDIS_URL, JWT_SECRET, ENCRYPTION_KEY (64 hex chars), OPENAI_API_KEY, AWS_*, INSTAGRAM_*
+# Create ../.env in the project root (not in git). Set MONGODB_URI, REDIS_URL, JWT_SECRET,
+# ENCRYPTION_KEY (64 hex: openssl rand -hex 32), OPENAI_API_KEY, AWS_*, INSTAGRAM_*, YOUTUBE_* as needed.
 npm install
 npm run dev
 ```
@@ -68,8 +68,7 @@ When **both** platforms are enabled, the API enqueues **two** jobs in parallel. 
 From the project root:
 
 ```bash
-cp .env.example .env
-# Fill secrets and URLs
+# Create .env in the project root with required secrets (file is gitignored).
 docker compose build
 docker compose up -d
 ```

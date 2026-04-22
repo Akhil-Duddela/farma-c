@@ -1,6 +1,7 @@
 .env
 .env.*
-!.env.example
+# Do not commit .env or .env.example (secrets / local templates)
+.env.example
 node_modules/
 dist/
 *.log
