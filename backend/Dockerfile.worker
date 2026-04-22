@@ -1,3 +1,5 @@
+# Bull workers (Instagram, YouTube, automation). Automation uses FFmpeg + Ollama
+# (set OLLAMA_BASE_URL e.g. http://ollama:11434; see root docker-compose.yml).
 FROM node:20-alpine
 RUN apk add --no-cache ffmpeg fontconfig ttf-dejavu
 WORKDIR /app

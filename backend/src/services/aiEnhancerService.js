@@ -101,6 +101,29 @@ function fallbackFromText(text) {
 }
 
 /**
+ * When Ollama is unreachable, return structured content so the API still succeeds (Render, offline, etc.).
+ * Replace with OpenAI / OpenRouter / HuggingFace later if needed.
+ * @param {string} input User idea (trimmed, non-empty)
+ * @returns {object}
+ */
+function fallbackAI(input) {
+  const t = String(input);
+  return {
+    title: `🔥 ${t} - Must Know Tips!`,
+    description: `Simple and practical ${t} tips for better poultry results. Every farmer should know this.`,
+    script: `You won’t believe this…\n\nMost farmers are doing ${t} wrong.\n\nHere’s what you should do:\n1. Start with proper feed\n2. Maintain clean water\n3. Monitor daily health\n\nFollow these steps and see the difference!\n\nFollow for more farming tips!`,
+    caption: `🔥 ${t} tips you must try!\n\nSave this and follow for more poultry hacks! 🐔🌱`,
+    hashtags: ['poultry', 'farming', 'desifarming', 'chickenfarm', 'organicfarming', 'kisan', 'dairyfarming', 'cattle'],
+    hooks: [
+      "You won’t believe this...",
+      'Most farmers are doing this wrong...',
+      'This trick can change your farm!',
+    ],
+    videoIdea: 'Show chickens, feeding process, close-up shots of farm activities',
+  };
+}
+
+/**
  * @param {string} input
  * @returns {Promise<ReturnType<typeof normalizeShape>>}
  */
@@ -136,20 +159,15 @@ async function enhanceContent(input) {
     });
   } catch (err) {
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-      const e = new Error(
-        'Cannot reach Ollama. Start it locally (e.g. ollama serve) or set OLLAMA_BASE_URL to your Ollama host.'
-      );
-      e.status = 502;
-      throw e;
+      console.warn('[aiEnhancer] Ollama not reachable, using fallback content:', err.code);
+      return normalizeShape(fallbackAI(idea));
     }
     if (err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout')) {
-      const e = new Error('Ollama request timed out. Try a shorter idea or increase OLLAMA_TIMEOUT_MS.');
-      e.status = 504;
-      throw e;
+      console.warn('[aiEnhancer] Ollama request timed out, using fallback content');
+      return normalizeShape(fallbackAI(idea));
     }
-    const e = new Error(err.message || 'Ollama request failed');
-    e.status = 502;
-    throw e;
+    console.warn('[aiEnhancer] Ollama request error, using fallback content:', err.message || err.code);
+    return normalizeShape(fallbackAI(idea));
   }
 
   if (res.status >= 400) {
@@ -167,9 +185,8 @@ async function enhanceContent(input) {
       // fall through
     }
     const msg = res.data && (res.data.error || res.data.message) ? String(res.data.error || res.data.message) : 'Ollama error';
-    const e = new Error(`Ollama: ${msg}`);
-    e.status = 502;
-    throw e;
+    console.warn('[aiEnhancer] Ollama returned error, using fallback content:', res.status, msg);
+    return normalizeShape(fallbackAI(idea));
   }
 
   return parseOllamaBody(res.data);
@@ -197,4 +214,4 @@ function parseOllamaBody(data) {
   return normalizeShape(fallbackFromText(text));
 }
 
-module.exports = { enhanceContent, tryParseJsonObject, normalizeShape };
+module.exports = { enhanceContent, tryParseJsonObject, normalizeShape, fallbackAI };
