@@ -1,0 +1,30 @@
+.grid.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.stat .label {
+  font-size: 0.85rem;
+  color: var(--fc-muted);
+}
+
+.stat .value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fc-forest);
+}
+
+.pad {
+  padding: 1.25rem;
+}
+
+h2 {
+  margin-top: 0;
+  color: var(--fc-forest);
+}
+
+ul {
+  padding-left: 1.1rem;
+}

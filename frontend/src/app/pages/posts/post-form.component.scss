@@ -1,0 +1,58 @@
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 320px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pad {
+  padding: 1.25rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+textarea,
+input,
+select {
+  font: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--fc-border);
+  padding: 0.55rem 0.65rem;
+}
+
+h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+  color: var(--fc-forest);
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+aside ul {
+  padding-left: 1.1rem;
+  margin: 0.5rem 0 0;
+}
+
+.alert {
+  background: #fdecea;
+  color: #b42318;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}

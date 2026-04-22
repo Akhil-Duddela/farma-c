@@ -1,0 +1,49 @@
+<div class="page-header">
+  <div>
+    <h1>Posts</h1>
+    <p class="muted">Create, schedule, and track Instagram content</p>
+  </div>
+  <a class="btn primary" routerLink="/posts/new">New post</a>
+</div>
+
+<div class="toolbar card">
+  <label class="inline">
+    Status
+    <select [(ngModel)]="filter" (ngModelChange)="load()">
+      <option value="">All</option>
+      <option value="draft">Draft</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="posted">Posted</option>
+      <option value="failed">Failed</option>
+    </select>
+  </label>
+</div>
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Caption</th>
+        <th>Scheduled</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (p of posts; track p._id) {
+        <tr>
+          <td><span class="badge" [class]="p.status">{{ p.status }}</span></td>
+          <td class="clip">{{ p.caption || '—' }}</td>
+          <td class="muted">{{ p.scheduledAt | date: 'medium' : undefined : 'Asia/Kolkata' }}</td>
+          <td class="actions">
+            <a class="link" [routerLink]="['/posts', p._id, 'edit']">Edit</a>
+            <button type="button" class="link danger" (click)="delete(p._id)">Delete</button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  @if (!posts.length) {
+    <p class="muted pad">No posts match this filter.</p>
+  }
+</div>

@@ -1,0 +1,40 @@
+@use '../posts/post-form.component.scss';
+
+h2 {
+  margin-top: 0;
+  color: var(--fc-forest);
+}
+
+.ok {
+  background: #e6f4ea;
+  color: #1e5b2a;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.alert {
+  background: #fdecea;
+  color: #b42318;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.accounts {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+
+.accounts li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--fc-border);
+}
+
+code {
+  font-size: 0.85rem;
+}

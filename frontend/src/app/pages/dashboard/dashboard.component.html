@@ -1,0 +1,41 @@
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">Overview of your farm content pipeline</p>
+  </div>
+  <a class="btn primary" routerLink="/posts/new">New post</a>
+</div>
+
+<div class="grid stats">
+  <div class="stat card">
+    <div class="stat-label">Total likes (synced)</div>
+    <div class="stat-value">{{ summary.totals?.likes ?? 0 }}</div>
+  </div>
+  <div class="stat card">
+    <div class="stat-label">Reach</div>
+    <div class="stat-value">{{ summary.totals?.reach ?? 0 }}</div>
+  </div>
+  <div class="stat card">
+    <div class="stat-label">Impressions</div>
+    <div class="stat-value">{{ summary.totals?.impressions ?? 0 }}</div>
+  </div>
+</div>
+
+<section class="card section">
+  <div class="section-head">
+    <h2>Recent posts</h2>
+    <a routerLink="/posts" class="link">View all</a>
+  </div>
+  @if (!posts.length) {
+    <p class="muted">No posts yet. Create your first AI-assisted post.</p>
+  }
+  <ul class="list">
+    @for (p of posts; track p._id) {
+      <li>
+        <span class="badge" [class]="p.status">{{ p.status }}</span>
+        <span class="snippet">{{ p.caption | slice: 0:90 }}</span>
+        <a class="link" [routerLink]="['/posts', p._id, 'edit']">Edit</a>
+      </li>
+    }
+  </ul>
+</section>

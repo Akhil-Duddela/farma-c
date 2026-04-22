@@ -1,0 +1,29 @@
+<div class="page-header">
+  <div>
+    <h1>Activity logs</h1>
+    <p class="muted">AI generation, publishing, and system events</p>
+  </div>
+</div>
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Level</th>
+        <th>Step</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (l of logs; track l._id) {
+        <tr>
+          <td class="muted nowrap">{{ l.createdAt | date: 'medium' }}</td>
+          <td><span class="badge" [class]="l.level">{{ l.level }}</span></td>
+          <td class="mono">{{ l.step }}</td>
+          <td>{{ l.message }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

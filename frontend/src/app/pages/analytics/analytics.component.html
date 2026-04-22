@@ -1,0 +1,37 @@
+<div class="page-header">
+  <div>
+    <h1>Analytics</h1>
+    <p class="muted">Aggregated metrics from synced Instagram insights</p>
+  </div>
+</div>
+
+<div class="grid stats">
+  <div class="card stat">
+    <div class="label">Likes (engagement)</div>
+    <div class="value">{{ data.totals?.likes ?? 0 }}</div>
+  </div>
+  <div class="card stat">
+    <div class="label">Reach</div>
+    <div class="value">{{ data.totals?.reach ?? 0 }}</div>
+  </div>
+  <div class="card stat">
+    <div class="label">Impressions</div>
+    <div class="value">{{ data.totals?.impressions ?? 0 }}</div>
+  </div>
+</div>
+
+<section class="card pad">
+  <h2>Recent published posts</h2>
+  @if (data.recent?.length) {
+    <ul>
+      @for (p of data.recent || []; track p._id) {
+        <li>
+          <span class="muted">{{ p.postedAt | date: 'medium' }}</span>
+          — {{ p.caption | slice: 0:100 }}
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="muted">Publish content and sync insights from the API to populate analytics.</p>
+  }
+</section>

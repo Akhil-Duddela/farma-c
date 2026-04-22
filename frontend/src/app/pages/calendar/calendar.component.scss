@@ -1,0 +1,34 @@
+.day {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.day h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: var(--fc-forest);
+}
+
+.day ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.day li {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.snippet {
+  font-size: 0.95rem;
+}
+
+.pad {
+  padding: 1.25rem;
+}

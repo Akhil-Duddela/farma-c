@@ -1,0 +1,60 @@
+.auth-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: radial-gradient(circle at 20% 20%, rgba(76, 122, 74, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(139, 90, 43, 0.12), transparent 35%), var(--fc-bg);
+}
+
+.card {
+  width: min(420px, 100%);
+  background: var(--fc-surface);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: var(--fc-shadow);
+  border: 1px solid var(--fc-border);
+}
+
+h1 {
+  margin: 0 0 0.35rem;
+  color: var(--fc-forest);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fc-muted);
+}
+
+input {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--fc-border);
+  font: inherit;
+}
+
+.alert {
+  background: #fdecea;
+  color: #b42318;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.small {
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+a {
+  color: var(--fc-forest);
+  font-weight: 600;
+}

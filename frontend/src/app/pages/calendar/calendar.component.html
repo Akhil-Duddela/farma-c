@@ -1,0 +1,26 @@
+<div class="page-header">
+  <div>
+    <h1>Schedule</h1>
+    <p class="muted">Upcoming posts (IST-friendly timestamps in list)</p>
+  </div>
+  <a class="btn primary" routerLink="/posts/new">Schedule new</a>
+</div>
+
+@for (day of keys(); track day) {
+  <section class="card day">
+    <h2>{{ day }}</h2>
+    <ul>
+      @for (p of grouped[day]; track p._id) {
+        <li>
+          <span class="muted">{{ p.scheduledAt | date: 'shortTime' : undefined : 'Asia/Kolkata' }}</span>
+          <span class="snippet">{{ p.caption | slice: 0:120 }}</span>
+          <a class="link" [routerLink]="['/posts', p._id, 'edit']">Edit</a>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (!keys().length) {
+  <div class="card pad muted">No scheduled posts. Create one with a future date and time.</div>
+}

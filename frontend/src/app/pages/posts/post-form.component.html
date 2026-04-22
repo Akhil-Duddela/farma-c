@@ -1,0 +1,82 @@
+<div class="page-header">
+  <div>
+    <h1>{{ route.snapshot.paramMap.get('id') === 'new' ? 'New post' : 'Edit post' }}</h1>
+    <p class="muted">AI captions, media, and scheduling</p>
+  </div>
+  <a routerLink="/posts" class="link">Back to list</a>
+</div>
+
+@if (error) {
+  <div class="alert">{{ error }}</div>
+}
+
+<div class="grid-two">
+  <div class="card pad">
+    <div class="actions-row">
+      <button type="button" class="btn secondary" (click)="runAi()" [disabled]="aiBusy">
+        {{ aiBusy ? 'Generating…' : 'Generate AI bundle' }}
+      </button>
+      <button type="button" class="btn secondary" (click)="improve()" [disabled]="aiBusy">Improve caption</button>
+      <button type="button" class="btn secondary" (click)="runMedia()" [disabled]="mediaBusy">
+        {{ mediaBusy ? 'Image…' : 'Generate image' }}
+      </button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <label>Instagram account</label>
+      <select formControlName="instagramAccountId">
+        @for (a of accounts; track a._id) {
+          <option [value]="a._id">{{ a.username || a.igUserId }} — {{ a.label }}</option>
+        }
+      </select>
+
+      <label>Caption (Telugu + English)</label>
+      <textarea rows="5" formControlName="caption" placeholder="Your caption"></textarea>
+
+      <label>Hashtags (space-separated)</label>
+      <input type="text" formControlName="hashtagsText" />
+
+      <h3>Reel script</h3>
+      <label>Hook</label>
+      <input type="text" formControlName="hook" />
+      <label>Body</label>
+      <textarea rows="4" formControlName="body"></textarea>
+      <label>CTA</label>
+      <input type="text" formControlName="cta" />
+
+      <label>Media URL(s) — one HTTPS URL per line (S3 public URL)</label>
+      <textarea rows="3" formControlName="mediaUrlsText" placeholder="https://..."></textarea>
+
+      <label>Aspect ratio</label>
+      <select formControlName="aspectRatio">
+        <option value="1:1">1:1 (feed)</option>
+        <option value="9:16">9:16 (reel/story)</option>
+        <option value="4:5">4:5 (portrait)</option>
+      </select>
+
+      <label>Status</label>
+      <select formControlName="status">
+        <option value="draft">Draft</option>
+        <option value="scheduled">Scheduled</option>
+      </select>
+
+      @if (form.getRawValue().status === 'scheduled') {
+        <label>Schedule (local time)</label>
+        <input type="datetime-local" formControlName="scheduledAt" />
+      }
+
+      <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
+        {{ loading ? 'Saving…' : 'Save' }}
+      </button>
+    </form>
+  </div>
+
+  <aside class="card pad muted small">
+    <h3>Publishing checklist</h3>
+    <ul>
+      <li>Link a Business/Creator Instagram account in Settings.</li>
+      <li>Images must be publicly reachable HTTPS URLs (configure S3 public URL).</li>
+      <li>Run the worker service so scheduled jobs publish reliably.</li>
+    </ul>
+  </aside>
+</div>

@@ -1,0 +1,67 @@
+<div class="page-header">
+  <div>
+    <h1>Settings</h1>
+    <p class="muted">Profile, timezone (IST default), and Instagram accounts</p>
+  </div>
+</div>
+
+@if (error) {
+  <div class="alert">{{ error }}</div>
+}
+@if (saved) {
+  <div class="ok">Settings saved.</div>
+}
+
+<div class="grid-two">
+  <section class="card pad">
+    <h2>Profile & automation</h2>
+    <form [formGroup]="profile" (ngSubmit)="saveProfile()">
+      <label>Name</label>
+      <input type="text" formControlName="name" />
+      <label>Timezone</label>
+      <input type="text" formControlName="timezone" />
+      <label>Daily auto posts (0 = off)</label>
+      <input type="number" formControlName="dailyAutoPostCount" />
+      <label>Preferred hour (IST, 0–23)</label>
+      <input type="number" formControlName="dailyAutoPostHourIST" />
+      <button class="btn primary" type="submit">Save</button>
+    </form>
+  </section>
+
+  <section class="card pad">
+    <h2>Instagram Graph API</h2>
+    <p class="muted small">
+      Use a long-lived User access token with <code>instagram_basic</code>,
+      <code>instagram_content_publish</code>, and <code>pages_show_list</code>. Link your Instagram
+      Business/Creator account.
+    </p>
+    <form [formGroup]="linkForm" (ngSubmit)="linkIg()">
+      <label>Instagram Business user ID</label>
+      <input type="text" formControlName="igUserId" />
+      <label>Long-lived access token (or leave empty and use short-lived below)</label>
+      <input type="password" formControlName="accessToken" autocomplete="off" />
+      <label>Short-lived token (exchange server-side)</label>
+      <input type="password" formControlName="shortLivedToken" autocomplete="off" />
+      <label>Username (optional)</label>
+      <input type="text" formControlName="username" />
+      <label>Facebook Page ID (optional)</label>
+      <input type="text" formControlName="pageId" />
+      <button class="btn secondary" type="submit">Link account</button>
+    </form>
+
+    <h3>Linked accounts</h3>
+    <ul class="accounts">
+      @for (a of accounts; track a._id) {
+        <li>
+          <strong>{{ a.username || a.igUserId }}</strong>
+          @if (a.isDefault) {
+            <span class="badge">default</span>
+          }
+          @if (!a.isDefault) {
+            <button type="button" class="link" (click)="setDefault(a._id)">Make default</button>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+</div>
