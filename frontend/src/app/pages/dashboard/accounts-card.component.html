@@ -1,4 +1,4 @@
-<div class="card border-0 shadow-sm mb-4">
+<div class="card border-0 shadow-sm mb-4" id="connect-accounts" tabindex="-1">
   <div class="card-header bg-white border-0 py-3">
     <h2 class="h5 mb-0 fw-semibold">Connected accounts</h2>
     <p class="text-muted small mb-0">Link Instagram and YouTube to enable publishing</p>
@@ -88,6 +88,14 @@
           </ul>
         } @else {
           <p class="text-muted small">Open Google, approve access, then paste the <code>code</code> from the callback URL.</p>
+        }
+        @if (ytRedirectUri) {
+          <div class="alert alert-secondary small py-2 mb-0">
+            <strong>Google console</strong> — add this <em>exact</em> URL under OAuth client →
+            <span class="text-nowrap">Authorized redirect URIs</span> to fix
+            <code>redirect_uri_mismatch</code>:<br />
+            <code class="d-inline-block mt-1 user-select-all break-all small">{{ ytRedirectUri }}</code>
+          </div>
         }
         <div class="border-top pt-2 mt-2 d-flex flex-column gap-2 small">
           <div class="d-flex flex-wrap gap-1">

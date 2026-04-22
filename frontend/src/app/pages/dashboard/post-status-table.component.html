@@ -77,6 +77,18 @@
                 <td class="text-center">{{ plIcon(pl(p.platforms?.youtube)) }}</td>
                 <td>
                   <small class="text-danger">{{ anyPlatformError(p) }}</small>
+                  @if (showYoutubeReconnect(p)) {
+                    <div class="small text-body mt-1">
+                      <a class="link-primary fw-medium" href="#connect-accounts">Reconnect YouTube</a>
+                      <span class="text-muted"> (OAuth), then Retry.</span>
+                    </div>
+                  }
+                  @if (showInstagramReconnect(p)) {
+                    <div class="small text-body mt-1">
+                      <a class="link-primary fw-medium" href="#connect-accounts">Reconnect Instagram</a>
+                      <span class="text-muted"> (new token), then Retry.</span>
+                    </div>
+                  }
                 </td>
                 <td class="small text-muted text-nowrap">
                   @if (p.scheduledAt) {
@@ -139,6 +151,18 @@
                   </div>
                   @if (anyPlatformError(p)) {
                     <div class="small text-danger mt-1">{{ anyPlatformError(p) }}</div>
+                  }
+                  @if (showYoutubeReconnect(p)) {
+                    <div class="small mt-1">
+                      <a class="link-primary" href="#connect-accounts">Reconnect YouTube</a>
+                      <span class="text-muted">, then Retry</span>
+                    </div>
+                  }
+                  @if (showInstagramReconnect(p)) {
+                    <div class="small mt-1">
+                      <a class="link-primary" href="#connect-accounts">Reconnect Instagram</a>
+                      <span class="text-muted">, then Retry</span>
+                    </div>
                   }
                 </div>
                 @if (canRetry(p)) {

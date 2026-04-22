@@ -1,3 +1,4 @@
+const config = require('../config');
 const youtubeTokenService = require('../services/youtubeTokenService');
 const YouTubeAccount = require('../models/YouTubeAccount');
 const logService = require('../services/logService');
@@ -34,7 +35,9 @@ function authUrl(req, res) {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const url = youtubeTokenService.getAuthUrl();
-    res.json({ url, state: `uid:${req.user._id}` });
+    /** Must match an entry in Google Cloud → OAuth client → Authorized redirect URIs (exact) */
+    const redirectUri = config.youtube.redirectUri;
+    res.json({ url, state: `uid:${req.user._id}`, redirectUri });
   } catch (e) {
     res.status(500).json({ error: e.message || 'Config error' });
   }

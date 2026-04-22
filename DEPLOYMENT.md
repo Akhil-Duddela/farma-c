@@ -73,7 +73,7 @@ docker compose up -d --build
 
 - **UI (nginx + Angular):** `http://localhost:8080` — browser calls `/api/...` on the same origin; nginx proxies to the `api` service.
 - **API (direct, health, OAuth redirects):** `http://localhost:4001` — map host **4001** → container 4000 to avoid clashing with a local dev server on 4000.
-- **OAuth:** In Meta and Google apps, set redirect URLs to `http://localhost:4001/api/instagram/callback` and `http://localhost:4001/api/youtube/callback` (these are fixed in `docker-compose.yml` for the stack).
+- **OAuth:** In Meta and Google apps, set redirect URLs to `http://localhost:4001/api/instagram/callback` and `http://localhost:4001/api/youtube/callback` (these are fixed in `docker-compose.yml` for the stack). They must match **character-for-character** (scheme, host, port, path). If Google shows **Error 400: `redirect_uri_mismatch`**, open [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → your **OAuth 2.0 Client ID** → under **Authorized redirect URIs** add that exact `.../api/youtube/callback` string. The dashboard’s “Connected accounts” card also shows the active `redirectUri` from the API. For **Authorized JavaScript origins**, add e.g. `http://localhost:8080` and `http://localhost:4001` if Google asks.
 - **Mongo/Redis** are not published to the host by default (avoids port conflicts with local databases). Data stays in the `mongo_data` volume.
 - `CORS_ORIGIN` in Compose includes `http://localhost:8080` and `http://localhost:4200` for the Angular dev server when not using Docker.
 

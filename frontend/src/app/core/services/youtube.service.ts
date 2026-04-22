@@ -19,8 +19,10 @@ export class YoutubeService {
     return this.http.get<YoutubeAccount[]>(`${environment.apiUrl}/youtube/accounts`);
   }
 
-  getAuthUrl(): Observable<{ url: string; state: string }> {
-    return this.http.get<{ url: string; state: string }>(`${environment.apiUrl}/youtube/auth-url`);
+  getAuthUrl(): Observable<{ url: string; state: string; redirectUri: string }> {
+    return this.http.get<{ url: string; state: string; redirectUri: string }>(
+      `${environment.apiUrl}/youtube/auth-url`
+    );
   }
 
   exchangeCode(code: string): Observable<YoutubeAccount> {

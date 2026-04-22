@@ -19,7 +19,8 @@ async function register({ email, password, name }) {
 }
 
 async function login({ email, password }) {
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const normalized = (email || '').trim().toLowerCase();
+  const user = await User.findOne({ email: normalized });
   if (!user || !(await user.comparePassword(password))) {
     const err = new Error('Invalid credentials');
     err.status = 401;

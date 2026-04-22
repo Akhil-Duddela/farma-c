@@ -23,9 +23,15 @@ export class AccountsCardComponent implements OnInit {
   error = '';
   igForm = { igUserId: '', accessToken: '', pageId: '', username: '' };
   ytCode = '';
+  /** Must match Google Cloud → OAuth client → Authorized redirect URIs (exact) */
+  ytRedirectUri: string | null = null;
 
   ngOnInit(): void {
     this.reload();
+    this.yt.getAuthUrl().subscribe({
+      next: (r) => (this.ytRedirectUri = r.redirectUri || null),
+      error: () => (this.ytRedirectUri = null),
+    });
   }
 
   reload(): void {

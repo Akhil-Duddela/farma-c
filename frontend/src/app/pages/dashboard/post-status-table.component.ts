@@ -115,6 +115,57 @@ export class PostStatusTableComponent implements OnInit, OnDestroy, OnChanges {
     return a || b || p.failureReason || '';
   }
 
+  /** YouTube/Instagram may store long API errors; Bull can show "Invalid Credentials" for the same root cause */
+  isAuthOrTokenError(msg: string): boolean {
+    const t = (msg || '').toLowerCase();
+    if (!t) {
+      return false;
+    }
+    if (t.includes('invalid credentials') || t.includes('invalid credential')) {
+      return true;
+    }
+    if (t.includes('authentication credentials') || t.includes('login required') || t.includes('reauth')) {
+      return true;
+    }
+    if (t.includes('unauthorized') || t.includes('401')) {
+      return true;
+    }
+    if (t.includes('invalid grant') || t.includes('token has been expired') || t.includes('revoked')) {
+      return true;
+    }
+    if (t.includes('access token') && (t.includes('invalid') || t.includes('expired'))) {
+      return true;
+    }
+    if (t.includes('refresh') && t.includes('token') && t.includes('invalid')) {
+      return true;
+    }
+    return false;
+  }
+
+  showYoutubeReconnect(p: Post): boolean {
+    if (!p.platforms?.youtube?.enabled) {
+      return false;
+    }
+    if (p.platforms?.youtube?.status !== 'failed') {
+      return false;
+    }
+    return this.isAuthOrTokenError(
+      p.platforms?.youtube?.error || p.failureReason || ''
+    );
+  }
+
+  showInstagramReconnect(p: Post): boolean {
+    if (!p.platforms?.instagram?.enabled) {
+      return false;
+    }
+    if (p.platforms?.instagram?.status !== 'failed') {
+      return false;
+    }
+    return this.isAuthOrTokenError(
+      p.platforms?.instagram?.error || p.failureReason || ''
+    );
+  }
+
   canRetry(p: Post): boolean {
     const igF = p.platforms?.instagram?.status === 'failed' && p.platforms?.instagram?.enabled;
     const ytF = p.platforms?.youtube?.status === 'failed' && p.platforms?.youtube?.enabled;

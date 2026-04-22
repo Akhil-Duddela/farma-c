@@ -3,7 +3,7 @@
 #   docker compose up -d --build
 #
 # UI:  http://localhost:8080
-# API: http://localhost:4000
+# API (host): http://localhost:4001  — OAuth callbacks must use this port in Google/Meta consoles when using this file
 #
 # Note: Mongo/Redis hostnames are fixed to Docker service names. Copy secrets from
 # a local .env; variable substitution (JWT, AWS, Meta, Google) uses project `.env`.
