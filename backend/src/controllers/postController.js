@@ -1,4 +1,3 @@
-const { body, validationResult } = require('express-validator');
 const postService = require('../services/postService');
 const aiContentService = require('../services/aiContentService');
 const mediaService = require('../services/mediaService');
@@ -30,10 +29,6 @@ async function getOne(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
     const post = await postService.createPost(req.user._id, req.body);
     res.status(201).json(post);
   } catch (e) {
@@ -46,10 +41,6 @@ async function create(req, res, next) {
  */
 async function createMulti(req, res, next) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
     const post = await postService.createPostV2(req.user._id, req.body);
     res.status(201).json(post);
   } catch (e) {
@@ -141,29 +132,6 @@ async function trendingTags(req, res, next) {
   }
 }
 
-const createValidators = [
-  body('instagramAccountId').optional().isString(),
-  body('youtubeAccountId').optional().isString(),
-  body('caption').optional().isString(),
-  body('content').optional().isString(),
-  body('status').optional().isIn(['draft', 'scheduled', 'posted', 'failed', 'publishing', 'partial']),
-  body('platforms').optional().isObject(),
-];
-
-const createV2Validators = [
-  body('content').optional().isString(),
-  body('mediaUrl').optional().isString(),
-  body('caption').optional().isString(),
-  body('scheduledAt').optional().isISO8601(),
-  body('status').optional().isIn(['draft', 'scheduled', 'partial', 'posted', 'failed']),
-  body('platforms').isObject().withMessage('platforms { instagram, youtube } required'),
-  body('platforms.instagram').optional().isBoolean(),
-  body('platforms.youtube').optional().isBoolean(),
-  body('mediaType').optional().isIn(['image', 'carousel', 'reel', 'video']),
-  body('instagramAccountId').optional().isString(),
-  body('youtubeAccountId').optional().isString(),
-];
-
 module.exports = {
   list,
   getOne,
@@ -177,6 +145,4 @@ module.exports = {
   improve,
   trendingTags,
   retryPlatforms,
-  createValidators,
-  createV2Validators,
 };

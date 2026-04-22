@@ -1,18 +1,7 @@
-const { body, validationResult } = require('express-validator');
 const authService = require('../services/authService');
-
-const registerValidators = [
-  body('email').isEmail().normalizeEmail(),
-  body('password').isLength({ min: 8 }),
-  body('name').optional().trim(),
-];
 
 async function register(req, res, next) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
     const user = await authService.register(req.body);
     res.status(201).json({
       id: user._id,
@@ -27,10 +16,6 @@ async function register(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
     const { user, token } = await authService.login({
       email: req.body.email,
       password: req.body.password,
@@ -62,4 +47,4 @@ async function me(req, res) {
   });
 }
 
-module.exports = { register, login, me, registerValidators };
+module.exports = { register, login, me };

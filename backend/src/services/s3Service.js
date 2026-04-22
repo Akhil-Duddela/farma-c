@@ -1,3 +1,9 @@
+/**
+ * S3 hardening (ops / IAM — not enforced in app code):
+ * - Block public "ACL: public-read" on the bucket; use CloudFront or OAC for reads if possible.
+ * - Grant this app only s3:PutObject / s3:GetObject on a prefix; never s3:DeleteBucket.
+ * - Prefer private objects + time-limited presigned GET URLs for sensitive media; public base URL is for IG/YouTube fetches.
+ */
 const {
   S3Client,
   PutObjectCommand,

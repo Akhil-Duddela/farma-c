@@ -16,6 +16,10 @@ export interface User {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  /**
+   * JWT in localStorage is simple for SPAs; for maximum protection use HttpOnly cookies
+   * issued by the same-site backend (requires /auth cookie endpoints and CSRF strategy).
+   */
   private readonly tokenKey = 'farmc_token';
 
   getToken(): string | null {

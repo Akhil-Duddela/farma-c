@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { assertProductionConfig } = require('./config/assertProductionConfig');
 const app = require('./app');
 const config = require('./config');
 const { connectDatabase } = require('./config/database');
@@ -35,6 +36,7 @@ function logProductionConfigWarnings() {
 }
 
 async function start() {
+  assertProductionConfig();
   logProductionConfigWarnings();
   await connectDatabase();
 

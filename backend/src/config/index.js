@@ -49,6 +49,20 @@ function resolveFrontendUrl() {
 
 const frontendUrl = resolveFrontendUrl();
 
+/**
+ * CORS allow-list. In production, wildcards are rejected (see assertProductionConfig).
+ * @returns {string[]}
+ */
+function resolveCorsOrigins() {
+  const raw = process.env.CORS_ORIGIN || 'http://localhost:4200';
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const corsOrigins = resolveCorsOrigins();
+
 module.exports = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '4000', 10),
@@ -81,6 +95,8 @@ module.exports = {
   jobMaxAttempts: parseInt(process.env.JOB_MAX_ATTEMPTS || '3', 10),
   jobBackoffMs: parseInt(process.env.JOB_BACKOFF_MS || '2000', 10),
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:4200',
+  /** Parsed CORS origins (no wildcard) */
+  corsOrigins,
   /** Public SPA origin — OAuth browser redirects use this */
   frontendUrl,
   ollama: {

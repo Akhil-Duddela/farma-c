@@ -1,5 +1,6 @@
 const ActivityLog = require('../models/ActivityLog');
 const logger = require('../utils/logger');
+const { redactForLog } = require('../utils/safeLog');
 
 async function logEntry({ userId, postId, level = 'info', step, message, meta = {} }) {
   try {
@@ -9,13 +10,14 @@ async function logEntry({ userId, postId, level = 'info', step, message, meta = 
       level,
       step,
       message: String(message).slice(0, 8000),
-      meta,
+      meta: redactForLog(meta) || {},
     });
   } catch (err) {
     logger.error('Failed to persist activity log', { err: err.message, step });
   }
   const logFn = level === 'error' ? logger.error : logger.info;
-  logFn(`[${step}] ${message}`, { userId: userId?.toString(), postId: postId?.toString(), ...meta });
+  const safeMeta = redactForLog(meta) || meta;
+  logFn(`[${step}] ${message}`, { userId: userId?.toString(), postId: postId?.toString(), ...safeMeta });
 }
 
 /**

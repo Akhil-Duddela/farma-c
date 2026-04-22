@@ -1,4 +1,3 @@
-const { validationResult } = require('express-validator');
 const postService = require('../services/postService');
 const { enqueueAIGeneration } = require('../services/automationPipelineService');
 const Post = require('../models/Post');
@@ -8,10 +7,6 @@ const Post = require('../models/Post');
  */
 async function run(req, res, next) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
     const { input, platforms } = req.body;
     const p = {
       input,

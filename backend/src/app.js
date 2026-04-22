@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { requestIdMiddleware } = require('./middleware/requestId');
+const { requireHttps } = require('./middleware/requireHttps');
 const { connectState } = require('./config/healthState');
 
 const authRoutes = require('./routes/auth');
@@ -21,24 +22,62 @@ const automationRoutes = require('./routes/automationRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
 app.use(requestIdMiddleware);
-app.use(helmet());
+app.use(requireHttps);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(
   cors({
-    origin: config.corsOrigin.split(',').map((s) => s.trim()),
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (config.corsOrigins.length === 0) {
+        return callback(null, false);
+      }
+      if (config.corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   })
 );
 app.use(express.json({ limit: '12mb' }));
 app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: config.env === 'production' ? 300 : 2000,
+const oneMinute = 60 * 1000;
+const fifteen = 15 * 60 * 1000;
+const isProd = config.env === 'production';
+const keyFromUser = (req) => (req.user?._id ? `u:${String(req.user._id)}` : `ip:${req.ip}`);
+
+const limiterAI = rateLimit({
+  windowMs: oneMinute,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: keyFromUser,
 });
-app.use('/api/', limiter);
+const limiterPosts = rateLimit({
+  windowMs: oneMinute,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: keyFromUser,
+});
+const limiterDefault = rateLimit({
+  windowMs: fifteen,
+  max: isProd ? 300 : 2000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: keyFromUser,
+});
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'farm-c-ai-backend', env: config.env });
@@ -55,16 +94,16 @@ app.get('/health/ready', (req, res) => {
   });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/posts', postRoutes);
-app.use('/api/instagram', instagramRoutes);
-app.use('/api/logs', logRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/youtube', youtubeRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/automation', automationRoutes);
+app.use('/api/ai', limiterAI, aiRoutes);
+app.use('/api/posts', limiterPosts, postRoutes);
+app.use('/api/auth', limiterDefault, authRoutes);
+app.use('/api/instagram', limiterDefault, instagramRoutes);
+app.use('/api/logs', limiterDefault, logRoutes);
+app.use('/api/settings', limiterDefault, settingsRoutes);
+app.use('/api/analytics', limiterDefault, analyticsRoutes);
+app.use('/api/youtube', limiterDefault, youtubeRoutes);
+app.use('/api/upload', limiterDefault, uploadRoutes);
+app.use('/api/automation', limiterDefault, automationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
