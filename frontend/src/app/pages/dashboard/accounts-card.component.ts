@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy, inject, output } from '@angular/core';
+import { Component, OnInit, inject, output, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
 import { YoutubeService, YoutubeAccount } from '../../core/services/youtube.service';
-
-const YT_OAUTH_MSG = 'farmc-youtube-oauth';
+import { YoutubeOauthNotifyService } from '../../core/services/youtube-oauth-notify.service';
 
 @Component({
   selector: 'app-accounts-card',
@@ -13,18 +13,11 @@ const YT_OAUTH_MSG = 'farmc-youtube-oauth';
   templateUrl: './accounts-card.component.html',
   styleUrl: './accounts-card.component.scss',
 })
-export class AccountsCardComponent implements OnInit, OnDestroy {
+export class AccountsCardComponent implements OnInit {
   private readonly ig = inject(InstagramService);
   private readonly yt = inject(YoutubeService);
-
-  private readonly onYtOauthMessage = (e: MessageEvent): void => {
-    if (e.origin !== window.location.origin) return;
-    const d = e.data as { type?: string; status?: string; reason?: string } | null;
-    if (d?.type !== YT_OAUTH_MSG) return;
-    this.error = d.status === 'error' && d.reason ? d.reason : '';
-    this.reload();
-    this.connected.emit();
-  };
+  private readonly ytOauth = inject(YoutubeOauthNotifyService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly connected = output<void>();
 
@@ -38,20 +31,18 @@ export class AccountsCardComponent implements OnInit, OnDestroy {
   ytRedirectUri: string | null = null;
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('message', this.onYtOauthMessage);
-    }
+    this.ytOauth.result$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((r) => {
+        this.error = r.status === 'error' && r.reason ? r.reason : '';
+        this.reload();
+        this.connected.emit();
+      });
     this.reload();
     this.yt.getAuthUrl().subscribe({
       next: (r) => (this.ytRedirectUri = r.redirectUri || null),
       error: () => (this.ytRedirectUri = null),
     });
-  }
-
-  ngOnDestroy(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('message', this.onYtOauthMessage);
-    }
   }
 
   reload(): void {
@@ -134,7 +125,12 @@ export class AccountsCardComponent implements OnInit, OnDestroy {
     this.error = '';
     this.yt.getAuthUrl().subscribe({
       next: ({ url }) => {
-        window.open(url, '_blank', 'noopener');
+        /** Do not pass `noopener`: it clears `window.opener` in the new tab, so
+         *  `/youtube/oauth-result` cannot postMessage back to this window. */
+        const w = window.open(url, 'farmc_youtube_oauth', 'width=800,height=720,scrollbars=yes');
+        if (!w) {
+          this.error = 'Your browser blocked the pop-up. Allow pop-ups for this site and try again.';
+        }
       },
       error: (e) => (this.error = e.error?.error || 'Could not get auth URL'),
     });
