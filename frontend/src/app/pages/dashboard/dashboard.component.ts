@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CreatePostCardComponent } from './create-post-card.component';
 import { PostStatusTableComponent } from './post-status-table.component';
 import { AccountsCardComponent } from './accounts-card.component';
@@ -23,12 +24,24 @@ import { CommonModule } from '@angular/common';
 export class DashboardComponent implements OnInit {
   private readonly posts = inject(PostService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   refreshTick = 0;
   summary: { totals?: { likes: number; reach: number; impressions: number } } = {};
 
   ngOnInit(): void {
     this.analytics.summary().subscribe((s) => (this.summary = s));
+    const y = this.route.snapshot.queryParamMap.get('youtube');
+    if (y) {
+      this.bump();
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { youtube: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   onPostCreated(): void {

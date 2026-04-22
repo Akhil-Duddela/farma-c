@@ -1,8 +1,10 @@
-import { Component, OnInit, inject, output } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
 import { YoutubeService, YoutubeAccount } from '../../core/services/youtube.service';
+
+const YT_OAUTH_MSG = 'farmc-youtube-oauth';
 
 @Component({
   selector: 'app-accounts-card',
@@ -11,9 +13,18 @@ import { YoutubeService, YoutubeAccount } from '../../core/services/youtube.serv
   templateUrl: './accounts-card.component.html',
   styleUrl: './accounts-card.component.scss',
 })
-export class AccountsCardComponent implements OnInit {
+export class AccountsCardComponent implements OnInit, OnDestroy {
   private readonly ig = inject(InstagramService);
   private readonly yt = inject(YoutubeService);
+
+  private readonly onYtOauthMessage = (e: MessageEvent): void => {
+    if (e.origin !== window.location.origin) return;
+    const d = e.data as { type?: string; status?: string; reason?: string } | null;
+    if (d?.type !== YT_OAUTH_MSG) return;
+    this.error = d.status === 'error' && d.reason ? d.reason : '';
+    this.reload();
+    this.connected.emit();
+  };
 
   readonly connected = output<void>();
 
@@ -27,11 +38,20 @@ export class AccountsCardComponent implements OnInit {
   ytRedirectUri: string | null = null;
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('message', this.onYtOauthMessage);
+    }
     this.reload();
     this.yt.getAuthUrl().subscribe({
       next: (r) => (this.ytRedirectUri = r.redirectUri || null),
       error: () => (this.ytRedirectUri = null),
     });
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('message', this.onYtOauthMessage);
+    }
   }
 
   reload(): void {

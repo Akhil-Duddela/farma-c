@@ -57,28 +57,34 @@ const frontendBase =
  * Google redirect after consent — must match YOUTUBE_REDIRECT_URI (e.g. .../api/youtube/callback).
  * Public: no JWT; user is identified by `state` (uid) from the auth URL.
  */
+function oauthResultUrl(ok, errMessage) {
+  if (ok) {
+    return `${frontendBase}/youtube/oauth-result?ok=1`;
+  }
+  return `${frontendBase}/youtube/oauth-result?error=${encodeURIComponent(errMessage || 'unknown')}`;
+}
+
 async function callback(req, res) {
   const { code, state, error, error_description: errorDescription } = req.query;
-  const deny = (msg) => res.redirect(302, `${frontendBase}/dashboard?youtube=error&reason=${encodeURIComponent(msg)}`);
   if (error) {
-    return deny(String(errorDescription || error));
+    return res.redirect(302, oauthResultUrl(false, String(errorDescription || error)));
   }
   if (!code || !state) {
-    return res.status(400).json({ error: 'Missing code or state' });
+    return res.redirect(302, oauthResultUrl(false, 'Missing code or state'));
   }
   const s = String(state);
   if (!s.startsWith('uid:')) {
-    return res.status(400).json({ error: 'Invalid state' });
+    return res.redirect(302, oauthResultUrl(false, 'Invalid state'));
   }
   const userId = s.replace(/^uid:/, '');
   if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(400).json({ error: 'Invalid state' });
+    return res.redirect(302, oauthResultUrl(false, 'Invalid state'));
   }
   try {
     await youtubeTokenService.exchangeCodeForAccount(userId, String(code));
-    return res.redirect(302, `${frontendBase}/dashboard?youtube=connected`);
+    return res.redirect(302, oauthResultUrl(true));
   } catch (e) {
-    return deny(e.message || 'OAuth exchange failed');
+    return res.redirect(302, oauthResultUrl(false, e.message || 'OAuth exchange failed'));
   }
 }
 
