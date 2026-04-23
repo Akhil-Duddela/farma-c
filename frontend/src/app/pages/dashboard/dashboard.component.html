@@ -19,7 +19,12 @@
   <div class="container-fluid">
     <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 py-4">
       <div>
-        <h1 class="h2 mb-1">Farm-C AI</h1>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+          <h1 class="h2 mb-0">Farm-C AI</h1>
+          @if (auth.showVerifiedCreatorBadge()) {
+            <span class="badge text-bg-info text-dark">Verified Creator</span>
+          }
+        </div>
         <p class="mb-0 text-white-50">Create, schedule, and track posts across Instagram &amp; YouTube</p>
       </div>
       <div class="d-flex flex-wrap gap-2 small">

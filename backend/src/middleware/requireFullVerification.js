@@ -11,8 +11,8 @@ function requireFullVerification(req, res, next) {
     return next();
   }
   const { emailVerified, phoneVerified, verificationStatus } = req.user;
-  const full =
-    emailVerified === true && phoneVerified === true && String(verificationStatus) === 'verified';
+  const profileOk = User.isProfileTrustOk(verificationStatus);
+  const full = emailVerified === true && phoneVerified === true && profileOk;
   if (full) {
     return next();
   }
@@ -22,7 +22,7 @@ function requireFullVerification(req, res, next) {
     requirements: {
       emailVerified: !!emailVerified,
       phoneVerified: !!phoneVerified,
-      profileVerified: String(verificationStatus) === 'verified',
+      profileTrustOk: profileOk,
       verificationStatus: verificationStatus || 'unverified',
     },
   });
@@ -43,11 +43,8 @@ async function requireFullVerificationFresh(req, res, next) {
     if (!u) {
       return res.status(401).json({ error: 'User not found' });
     }
-    if (
-      u.emailVerified === true &&
-      u.phoneVerified === true &&
-      String(u.verificationStatus) === 'verified'
-    ) {
+    const pOk = User.isProfileTrustOk(u.verificationStatus);
+    if (u.emailVerified === true && u.phoneVerified === true && pOk) {
       return next();
     }
     return res.status(403).json({
@@ -56,7 +53,7 @@ async function requireFullVerificationFresh(req, res, next) {
       requirements: {
         emailVerified: !!u.emailVerified,
         phoneVerified: !!u.phoneVerified,
-        profileVerified: String(u.verificationStatus) === 'verified',
+        profileTrustOk: pOk,
         verificationStatus: u.verificationStatus || 'unverified',
       },
     });

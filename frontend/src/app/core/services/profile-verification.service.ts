@@ -9,9 +9,11 @@ export interface ProfileStatus {
   phoneVerified: boolean;
   phoneNumberMasked: string;
   profileImageUrl: string;
-  verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected';
+  verificationStatus: 'unverified' | 'pending' | 'auto_verified' | 'verified' | 'rejected';
+  verificationScore?: number;
   verificationNotes: string;
   canUsePublishing: boolean;
+  hasVerifiedCreatorBadge?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -33,9 +35,19 @@ export class ProfileVerificationService {
       );
   }
 
-  submitVerification(): Observable<{ ok: boolean; verificationStatus: string }> {
+  submitVerification(): Observable<{
+    ok: boolean;
+    verificationStatus: string;
+    verificationScore?: number;
+    verificationNotes?: string;
+  }> {
     return this.http
-      .post<{ ok: boolean; verificationStatus: string }>(`${environment.apiUrl}/profile/submit-verification`, {})
+      .post<{
+        ok: boolean;
+        verificationStatus: string;
+        verificationScore?: number;
+        verificationNotes?: string;
+      }>(`${environment.apiUrl}/profile/submit-verification`, {})
       .pipe(switchMap((r) => this.auth.refreshUser().pipe(map(() => r))));
   }
 }

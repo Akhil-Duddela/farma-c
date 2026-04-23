@@ -1,7 +1,12 @@
 <div class="container-fluid px-0">
   <div class="page-header">
     <div class="min-w-0">
-      <h1>Posts</h1>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <h1 class="mb-0">Posts</h1>
+        @if (auth.showVerifiedCreatorBadge()) {
+          <span class="badge text-bg-info text-dark">Verified Creator</span>
+        }
+      </div>
       <p class="muted mb-0">All posts (use Dashboard for create &amp; status)</p>
     </div>
     <a class="btn primary btn-full-xs text-center" routerLink="/dashboard">Dashboard</a>

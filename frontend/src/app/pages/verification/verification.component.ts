@@ -13,7 +13,7 @@ import { ProfileVerificationService, ProfileStatus } from '../../core/services/p
   styleUrl: './verification.component.scss',
 })
 export class VerificationComponent implements OnInit {
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly profile = inject(ProfileVerificationService);
   private readonly fb = inject(FormBuilder);
 
@@ -44,7 +44,9 @@ export class VerificationComponent implements OnInit {
         this.status = s;
         this.stepEmailDone.set(s.emailVerified);
         this.stepPhoneDone.set(s.phoneVerified);
-        this.stepProfileDone.set(s.verificationStatus === 'verified');
+        this.stepProfileDone.set(
+          s.verificationStatus === 'verified' || s.verificationStatus === 'auto_verified'
+        );
         this.imageUrl = s.profileImageUrl || null;
         this.auth.refreshUser().subscribe();
       },
@@ -146,13 +148,23 @@ export class VerificationComponent implements OnInit {
     });
   }
 
+  profileTrustOk(s: ProfileStatus | null | undefined): boolean {
+    const st = s?.verificationStatus;
+    return st === 'verified' || st === 'auto_verified';
+  }
+
   submitProfile(): void {
     this.error = '';
     this.busy = true;
     this.profile.submitVerification().subscribe({
-      next: () => {
+      next: (r) => {
         this.busy = false;
-        this.success = 'Submitted for review. You will be notified when approved.';
+        this.success =
+          r.verificationStatus === 'auto_verified'
+            ? 'AI check passed — your profile is auto-verified. An admin can still review your account.'
+            : r.verificationStatus === 'pending'
+              ? 'Submitted for manual review. We will use your profile image in the admin queue.'
+              : 'Profile verification updated.';
         this.load();
         this.auth.refreshUser().subscribe();
       },

@@ -16,9 +16,11 @@ export interface User {
   phoneVerified: boolean;
   phoneNumberMasked?: string;
   profileImageUrl?: string;
-  verificationStatus?: 'unverified' | 'pending' | 'verified' | 'rejected';
+  verificationStatus?: 'unverified' | 'pending' | 'auto_verified' | 'verified' | 'rejected';
+  verificationScore?: number;
   verificationNotes?: string;
   canUsePublishing?: boolean;
+  hasVerifiedCreatorBadge?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +33,10 @@ export class AuthService {
   private readonly _user = signal<User | null>(null);
   readonly user = this._user.asReadonly();
   readonly canUsePublishing = computed(() => this._user()?.canUsePublishing === true);
+  /** Same gating as publishing — full email + phone + profile trust (verified or auto_verified) */
+  readonly showVerifiedCreatorBadge = computed(
+    () => this._user()?.hasVerifiedCreatorBadge === true || this._user()?.canUsePublishing === true
+  );
 
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);

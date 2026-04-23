@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { ShellComponent } from './pages/shell/shell.component';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
@@ -14,6 +15,7 @@ import { YoutubeOauthResultComponent } from './pages/youtube/youtube-oauth-resul
 import { AiEnhancerComponent } from './components/ai-enhancer/ai-enhancer.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { VerificationComponent } from './pages/verification/verification.component';
+import { AdminVerificationsComponent } from './pages/admin/admin-verifications.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -36,6 +38,11 @@ export const routes: Routes = [
       { path: 'youtube/oauth-result', component: YoutubeOauthResultComponent },
       { path: 'ai', component: AiEnhancerComponent },
       { path: 'verification', component: VerificationComponent },
+      {
+        path: 'admin/verifications',
+        component: AdminVerificationsComponent,
+        canActivate: [adminGuard],
+      },
     ],
   },
   { path: '**', redirectTo: '' },

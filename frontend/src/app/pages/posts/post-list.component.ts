@@ -14,7 +14,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class PostListComponent implements OnInit {
   private readonly api = inject(PostService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
 
   posts: Post[] = [];
   filter = '';

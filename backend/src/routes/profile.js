@@ -1,8 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { authenticate, requireRole } = require('../middleware/auth');
-const { validateBody } = require('../middleware/validateJoi');
-const { adminProfileReview } = require('../validation/schemas');
+const { authenticate } = require('../middleware/auth');
 const profileController = require('../controllers/profileController');
 
 const memory = multer({
@@ -22,12 +20,6 @@ router.use(authenticate);
 
 router.get('/status', profileController.status);
 router.post('/submit-verification', profileController.submitVerification);
-router.post(
-  '/admin/review',
-  requireRole('admin'),
-  validateBody(adminProfileReview),
-  profileController.setVerifiedByAdmin
-);
 router.post('/upload-image', (req, res, next) => {
   memory.single('file')(req, res, (err) => {
     if (err) {

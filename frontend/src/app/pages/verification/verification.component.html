@@ -35,10 +35,10 @@
     <div class="col-4">
       <div
         class="border rounded-3 p-2 h-100"
-        [class.border-success]="status?.verificationStatus === 'verified'"
+        [class.border-success]="profileTrustOk(status)"
         [class.border-warning]="status?.verificationStatus === 'pending'"
         [class.border-danger]="status?.verificationStatus === 'rejected'"
-        [class.bg-success-subtle]="status?.verificationStatus === 'verified'"
+        [class.bg-success-subtle]="profileTrustOk(status)"
       >
         <div class="fw-semibold">3. Profile</div>
         <span
@@ -46,14 +46,20 @@
           [ngClass]="
             status?.verificationStatus === 'verified'
               ? 'text-bg-success'
-              : status?.verificationStatus === 'pending'
-                ? 'text-bg-warning'
-                : status?.verificationStatus === 'rejected'
-                  ? 'text-bg-danger'
-                  : 'text-bg-secondary'
+              : status?.verificationStatus === 'auto_verified'
+                ? 'text-bg-info text-dark'
+                : status?.verificationStatus === 'pending'
+                  ? 'text-bg-warning'
+                  : status?.verificationStatus === 'rejected'
+                    ? 'text-bg-danger'
+                    : 'text-bg-secondary'
           "
         >
-          {{ status?.verificationStatus || 'unverified' }}
+          @if (status?.verificationStatus === 'auto_verified') {
+            Auto verified
+          } @else {
+            {{ status?.verificationStatus || 'unverified' }}
+          }
         </span>
       </div>
     </div>
@@ -140,14 +146,29 @@
     </div>
     <div class="card-body">
       @if (status?.verificationStatus === 'verified') {
-        <p class="text-success small mb-0">Your profile is verified. You can post and run automation.</p>
+        <p class="text-success small mb-0">
+          Your profile is admin-verified. @if (auth.showVerifiedCreatorBadge()) {
+            <span class="badge text-bg-info text-dark ms-1">Verified Creator</span>
+          }
+        </p>
+      } @else if (status?.verificationStatus === 'auto_verified') {
+        <p class="text-success small mb-1">
+          Your image passed the automated check (score {{ (status?.verificationScore ?? 0) | number: '1.0-2' }}). You can
+          post and run automation while an admin may still review your account.
+        </p>
+        @if (auth.showVerifiedCreatorBadge()) {
+          <p class="small mb-0"><span class="badge text-bg-info text-dark">Verified Creator</span></p>
+        }
       } @else {
         <p class="text-muted small">
-          Upload a clear face photo (or your brand logo if applicable). An admin can approve your account, or
-          use the dev admin API to approve in testing.
+          Upload a clear face photo. We run an automated check when possible, then the queue is available to admins
+          for final review.
         </p>
         @if (status?.verificationStatus === 'pending') {
-          <p class="small text-warning">Review pending. You will be able to post after approval.</p>
+          <p class="small text-warning">
+            Pending review. If the AI could not run, you are still in the admin queue. You can replace your image
+            and submit again.
+          </p>
         }
         @if (status?.verificationStatus === 'rejected' && status?.verificationNotes) {
           <p class="small text-danger">Note: {{ status?.verificationNotes }}</p>
@@ -162,14 +183,14 @@
           <p class="small text-muted">Current: {{ imageUrl | slice: 0 : 48 }}…</p>
         }
         <div class="d-flex flex-wrap gap-2">
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-primary"
-          [disabled]="busy || !imageFile"
-          (click)="uploadImage()"
-        >
-          Upload image
-        </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            [disabled]="busy || !imageFile"
+            (click)="uploadImage()"
+          >
+            Upload image
+          </button>
           <button
             type="button"
             class="btn btn-sm btn-primary"

@@ -40,10 +40,12 @@ const userSchema = new mongoose.Schema(
     profileImageUrl: { type: String, default: '' },
     verificationStatus: {
       type: String,
-      enum: ['unverified', 'pending', 'verified', 'rejected'],
+      enum: ['unverified', 'pending', 'auto_verified', 'verified', 'rejected'],
       default: 'unverified',
       index: true,
     },
+    /** Last AI/face check score 0–1 */
+    verificationScore: { type: Number, default: 0, min: 0, max: 1 },
     verificationNotes: { type: String, default: '' },
   },
   { timestamps: true }
@@ -61,11 +63,16 @@ userSchema.statics.hashPassword = async function hashPassword(plain) {
  * @param {import('mongoose').Document} u
  * @returns {boolean}
  */
+const PROFILE_TRUST = new Set(['verified', 'auto_verified']);
+
 function isFullyVerifiedUser(u) {
-  return (
-    u.emailVerified === true && u.phoneVerified === true && String(u.verificationStatus) === 'verified'
-  );
+  if (!u || u.emailVerified !== true || u.phoneVerified !== true) {
+    return false;
+  }
+  return PROFILE_TRUST.has(String(u.verificationStatus));
 }
+
+userSchema.statics.isProfileTrustOk = (status) => PROFILE_TRUST.has(String(status || ''));
 
 userSchema.statics.isFullyVerified = isFullyVerifiedUser;
 

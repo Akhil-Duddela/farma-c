@@ -1,8 +1,6 @@
 const s3Service = require('../services/s3Service');
 const logService = require('../services/logService');
 const verificationService = require('../services/verificationService');
-const logger = require('../utils/logger');
-
 /**
  * Image upload for KYC / profile (same pattern as /api/upload but dedicated prefix)
  */
@@ -39,7 +37,12 @@ async function uploadVerificationImage(req, res, next) {
 async function submitVerification(req, res, next) {
   try {
     const user = await verificationService.submitProfileVerification(req.user);
-    res.json({ ok: true, verificationStatus: user.verificationStatus });
+    res.json({
+      ok: true,
+      verificationStatus: user.verificationStatus,
+      verificationScore: user.verificationScore,
+      verificationNotes: user.verificationNotes,
+    });
   } catch (e) {
     if (e.status) {
       return res.status(e.status).json({ error: e.message });
@@ -50,49 +53,21 @@ async function submitVerification(req, res, next) {
 
 /** GET /api/profile/status */
 async function status(req, res) {
+  const u = require('../models/User');
+  const user = req.user;
   res.json({
-    emailVerified: !!req.user.emailVerified,
-    phoneVerified: !!req.user.phoneVerified,
-    phoneNumberMasked: req.user.phoneNumber
-      ? verificationService.maskPhone(req.user.phoneNumber) || '****'
+    emailVerified: !!user.emailVerified,
+    phoneVerified: !!user.phoneVerified,
+    phoneNumberMasked: user.phoneNumber
+      ? verificationService.maskPhone(user.phoneNumber) || '****'
       : '',
-    profileImageUrl: req.user.profileImageUrl || '',
-    verificationStatus: req.user.verificationStatus || 'unverified',
-    verificationNotes: req.user.verificationNotes || '',
-    canUsePublishing: require('../models/User').isFullyVerified(req.user),
+    profileImageUrl: user.profileImageUrl || '',
+    verificationStatus: user.verificationStatus || 'unverified',
+    verificationScore: typeof user.verificationScore === 'number' ? user.verificationScore : 0,
+    verificationNotes: user.verificationNotes || '',
+    canUsePublishing: u.isFullyVerified(user),
+    hasVerifiedCreatorBadge: u.isFullyVerified(user),
   });
 }
 
-/** Admin: approve (optional future) — or skip */
-async function setVerifiedByAdmin(req, res, next) {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin only' });
-  }
-  try {
-    const User = require('../models/User');
-    const { userId, action, notes } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId required' });
-    }
-    const u = await User.findById(userId);
-    if (!u) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    if (action === 'approve') {
-      u.verificationStatus = 'verified';
-      u.verificationNotes = notes || '';
-    } else if (action === 'reject') {
-      u.verificationStatus = 'rejected';
-      u.verificationNotes = notes || 'Please resubmit a clearer image';
-    } else {
-      return res.status(400).json({ error: 'action must be approve or reject' });
-    }
-    await u.save();
-    logger.info('Profile verification review', { by: String(req.user._id), userId, action });
-    res.json({ ok: true, verificationStatus: u.verificationStatus });
-  } catch (e) {
-    next(e);
-  }
-}
-
-module.exports = { uploadVerificationImage, submitVerification, status, setVerifiedByAdmin };
+module.exports = { uploadVerificationImage, submitVerification, status };

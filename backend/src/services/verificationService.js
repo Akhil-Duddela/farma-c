@@ -6,6 +6,7 @@ const emailService = require('./emailService');
 const smsService = require('./smsService');
 const { normalizeE164, maskPhone } = require('../utils/phone');
 const logger = require('../utils/logger');
+const aiVerificationService = require('./aiVerificationService');
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
@@ -186,6 +187,7 @@ async function setProfileImage(user, imageUrl) {
 }
 
 /**
+ * Run AI (Rekognition) + heuristics; auto_verified on pass, else pending for admin
  * @param {import('mongoose').Document} user
  */
 async function submitProfileVerification(user) {
@@ -194,18 +196,42 @@ async function submitProfileVerification(user) {
     e.status = 400;
     throw e;
   }
-  if (user.verificationStatus === 'verified') {
+  if (['verified', 'auto_verified'].includes(String(user.verificationStatus))) {
     return user;
   }
-  if (user.verificationStatus === 'pending') {
-    const e = new Error('Your profile is already pending review');
-    e.status = 409;
-    throw e;
+
+  let r;
+  try {
+    r = await aiVerificationService.verifyProfileImage(user.profileImageUrl);
+  } catch (e) {
+    logger.error('aiVerification threw', { err: e.message });
+    r = { valid: null, confidence: 0, reason: 'ANALYSIS_FAILED' };
   }
-  user.verificationStatus = 'pending';
-  user.verificationNotes = '';
+
+  if (r.valid === true) {
+    user.verificationStatus = 'auto_verified';
+    user.verificationScore = Math.min(1, Math.max(0, r.confidence || 0));
+    user.verificationNotes = r.reason || 'Auto approved';
+  } else if (r.valid === false) {
+    user.verificationStatus = 'pending';
+    user.verificationScore = 0;
+    user.verificationNotes = r.reason || 'Did not pass automatic checks; awaiting admin';
+  } else {
+    /* valid === null: Rekognition off or service error */
+    user.verificationStatus = 'pending';
+    user.verificationScore = 0;
+    const msg =
+      r.reason === 'REKOGNITION_UNAVAILABLE' || r.reason === 'AWS Rekognition is not configured'
+        ? 'Configure AWS for automatic face check, or an admin will review your photo'
+        : 'Auto verification is temporarily unavailable. Your submission is in the review queue';
+    user.verificationNotes = msg;
+  }
   await user.save();
-  logger.info('Profile submitted for verification', { userId: String(user._id) });
+  logger.info('Profile verification submitted', {
+    userId: String(user._id),
+    status: user.verificationStatus,
+    auto: r.valid,
+  });
   return user;
 }
 

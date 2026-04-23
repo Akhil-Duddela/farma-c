@@ -8,6 +8,7 @@ import { LogsErrorPanelComponent } from './logs-error-panel.component';
 import { AutomationPipelineComponent } from './automation-pipeline.component';
 import { PostService } from '../../core/services/post.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
 
 function mapOauthReason(raw: string | null | undefined): string {
@@ -55,6 +56,7 @@ function mapOauthReason(raw: string | null | undefined): string {
 export class DashboardComponent implements OnInit {
   private readonly posts = inject(PostService);
   private readonly analytics = inject(AnalyticsService);
+  readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);

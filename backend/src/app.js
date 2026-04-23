@@ -21,6 +21,7 @@ const aiRoutes = require('./routes/aiRoutes');
 const automationRoutes = require('./routes/automationRoutes');
 const accountsRoutes = require('./routes/accounts');
 const profileRoutes = require('./routes/profile');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -108,6 +109,7 @@ app.use('/api/analytics', limiterDefault, analyticsRoutes);
 app.use('/api/youtube', limiterDefault, youtubeRoutes);
 app.use('/api/upload', limiterDefault, uploadRoutes);
 app.use('/api/automation', limiterDefault, automationRoutes);
+app.use('/api/admin', limiterDefault, adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

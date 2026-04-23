@@ -61,12 +61,17 @@
     ></button>
   </div>
   <div class="offcanvas-body d-flex flex-column gap-3 p-3">
-    <div class="d-flex align-items-center gap-2">
-      <span class="fs-3" aria-hidden="true">🌾</span>
-      <div>
-        <div class="fw-bold">Farm-C AI</div>
-        <div class="small text-white-50">Multi-platform</div>
+    <div class="d-flex align-items-center justify-content-between gap-2">
+      <div class="d-flex align-items-center gap-2 min-w-0">
+        <span class="fs-3 flex-shrink-0" aria-hidden="true">🌾</span>
+        <div class="min-w-0">
+          <div class="fw-bold text-truncate">Farm-C AI</div>
+          <div class="small text-white-50">Multi-platform</div>
+        </div>
       </div>
+      @if (auth.showVerifiedCreatorBadge()) {
+        <span class="badge text-bg-info text-dark flex-shrink-0" title="Verified account">Verified Creator</span>
+      }
     </div>
     <nav class="nav flex-column gap-1" aria-label="Main">
       <ng-container *ngTemplateOutlet="navLinks" />
@@ -77,10 +82,15 @@
 
 <div class="app-layout">
   <aside class="sidebar d-none d-lg-flex" aria-label="Main navigation">
-    <div class="brand">
+    <div class="brand align-items-start">
       <span class="brand-mark" aria-hidden="true">🌾</span>
-      <div>
-        <div class="brand-title">Farm-C AI</div>
+      <div class="min-w-0">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="brand-title">Farm-C AI</div>
+          @if (auth.showVerifiedCreatorBadge()) {
+            <span class="badge text-bg-info text-dark" title="Verified account">Verified Creator</span>
+          }
+        </div>
         <div class="brand-sub">Multi-platform</div>
       </div>
     </div>
@@ -130,4 +140,13 @@
     class="offcanvas-link"
     >Verification</a
   >
+  @if (auth.user()?.role === 'admin') {
+    <a
+      routerLink="/admin/verifications"
+      routerLinkActive="active"
+      (click)="closeNav()"
+      class="offcanvas-link"
+      >Admin: verifications</a
+    >
+  }
 </ng-template>

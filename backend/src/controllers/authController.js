@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
 
 function userVerificationDto(user) {
   const u = user.toObject ? user.toObject() : user;
+  const can = User.isFullyVerified(u);
   return {
     emailVerified: !!u.emailVerified,
     phoneVerified: !!u.phoneVerified,
@@ -13,8 +14,10 @@ function userVerificationDto(user) {
       : '',
     profileImageUrl: u.profileImageUrl || '',
     verificationStatus: u.verificationStatus || 'unverified',
+    verificationScore: typeof u.verificationScore === 'number' ? u.verificationScore : 0,
     verificationNotes: u.verificationNotes || '',
-    canUsePublishing: User.isFullyVerified(u),
+    canUsePublishing: can,
+    hasVerifiedCreatorBadge: can,
   };
 }
 
