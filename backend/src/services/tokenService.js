@@ -3,6 +3,7 @@ const config = require('../config');
 const InstagramAccount = require('../models/InstagramAccount');
 const { encrypt, decrypt } = require('../utils/encryption');
 const logService = require('./logService');
+const logger = require('../utils/logger');
 
 /**
  * Exchange short-lived token for long-lived (60 days) — Meta Graph API.
@@ -70,6 +71,7 @@ async function refreshIfNeeded(accountDoc) {
   accountDoc.accessTokenEnc = encrypt(data.access_token);
   accountDoc.tokenExpiresAt = expiresAt;
   await accountDoc.save();
+  logger.info('Instagram long-lived token refreshed', { userId: String(accountDoc.userId), igUserId: accountDoc.igUserId });
   return accountDoc;
 }
 

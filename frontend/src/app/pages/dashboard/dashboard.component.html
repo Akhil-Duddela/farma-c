@@ -40,7 +40,13 @@
 <div class="container-fluid px-2 px-sm-3 pb-5">
   <div class="row g-4">
     <div class="col-12 col-xl-8 d-flex flex-column">
-      <app-accounts-card (connected)="onAccountsChange()" />
+      <app-accounts-card
+        [igPickKey]="igPickKey"
+        [ytPickKey]="ytPickKey"
+        (connected)="onAccountsChange()"
+        (clearedPicker)="onPickerCleared($event)"
+        (toastRequest)="onChildToast($event)"
+      />
       <app-automation-pipeline (pipelineEvent)="onPostDataChanged()" />
       <app-create-post-card (postCreated)="onPostCreated()" />
     </div>

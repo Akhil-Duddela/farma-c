@@ -17,6 +17,7 @@ const instagramAccountSchema = new mongoose.Schema(
     lastValidationError: { type: String, default: '' },
     label: { type: String, trim: true, default: 'Primary' },
     isDefault: { type: Boolean, default: false },
+    profilePictureUrl: { type: String, default: '' },
   },
   { timestamps: true }
 );

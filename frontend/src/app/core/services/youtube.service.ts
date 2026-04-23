@@ -9,6 +9,7 @@ export interface YoutubeAccount {
   channelTitle: string;
   isDefault?: boolean;
   tokenExpiresAt?: string;
+  thumbnailUrl?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -19,10 +20,29 @@ export class YoutubeService {
     return this.http.get<YoutubeAccount[]>(`${environment.apiUrl}/youtube/accounts`);
   }
 
-  getAuthUrl(): Observable<{ url: string; state: string; redirectUri: string }> {
-    return this.http.get<{ url: string; state: string; redirectUri: string }>(
-      `${environment.apiUrl}/youtube/auth-url`
+  getAuthUrl(): Observable<{ url: string; redirectUri: string }> {
+    return this.http.get<{ url: string; redirectUri: string }>(`${environment.apiUrl}/youtube/auth-url`);
+  }
+
+  getOAuthPending(key: string): Observable<{
+    pickKey: string;
+    channels: { channelId: string; title: string; thumb: string }[];
+  }> {
+    return this.http.get<{
+      pickKey: string;
+      channels: { channelId: string; title: string; thumb: string }[];
+    }>(`${environment.apiUrl}/youtube/oauth-pending`, { params: { key } });
+  }
+
+  selectChannel(pickKey: string, channelId: string) {
+    return this.http.post<{ ok: boolean; id: string; channelId: string; channelTitle: string }>(
+      `${environment.apiUrl}/youtube/select-channel`,
+      { pickKey, channelId }
     );
+  }
+
+  refreshTokens() {
+    return this.http.post<{ ok: boolean; total: number }>(`${environment.apiUrl}/youtube/refresh-tokens`, {});
   }
 
   exchangeCode(code: string): Observable<YoutubeAccount> {

@@ -10,6 +10,9 @@ router.get('/callback', youtubeController.callback);
 router.use(authenticate);
 
 router.get('/auth-url', youtubeController.authUrl);
+router.get('/oauth-pending', youtubeController.oauthPending);
+router.post('/select-channel', youtubeController.selectChannel);
+router.post('/refresh-tokens', youtubeController.refreshAll);
 router.post('/exchange', youtubeController.exchangeCode);
 router.post('/link', youtubeController.linkTokens);
 router.get('/accounts', youtubeController.list);

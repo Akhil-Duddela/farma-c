@@ -12,6 +12,7 @@ const youtubeAccountSchema = new mongoose.Schema(
     refreshTokenEnc: { type: String, default: '' },
     tokenExpiresAt: { type: Date, default: null },
     isDefault: { type: Boolean, default: false },
+    thumbnailUrl: { type: String, default: '' },
   },
   { timestamps: true }
 );

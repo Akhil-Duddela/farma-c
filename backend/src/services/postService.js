@@ -367,18 +367,22 @@ async function bulkCreateScheduled(userId, postsPayload) {
   return created;
 }
 
-async function removePlatformJobs(post) {
+async function removeSinglePlatformJob(post, platform) {
   const sid = post.scheduledAt || post.updatedAt;
-  if (post.platforms?.instagram?.enabled) {
+  if (platform === 'instagram' && post.platforms?.instagram?.enabled) {
     const jq = getInstagramQueue();
     const j = await jq.getJob(platformJobId(String(post._id), 'instagram', sid));
     if (j) await j.remove();
-  }
-  if (post.platforms?.youtube?.enabled) {
+  } else if (platform === 'youtube' && post.platforms?.youtube?.enabled) {
     const yq = getYoutubeQueue();
     const j = await yq.getJob(platformJobId(String(post._id), 'youtube', sid));
     if (j) await j.remove();
   }
+}
+
+async function removePlatformJobs(post) {
+  await removeSinglePlatformJob(post, 'instagram');
+  await removeSinglePlatformJob(post, 'youtube');
 }
 
 /**
@@ -538,4 +542,5 @@ module.exports = {
   ensureAccount,
   retryPostPlatforms,
   removePlatformJobs,
+  removeSinglePlatformJob,
 };

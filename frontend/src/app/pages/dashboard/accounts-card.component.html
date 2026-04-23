@@ -1,3 +1,80 @@
+<!-- Instagram multi-account -->
+@if (showIgModal) {
+  <div class="acc-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="ig-pick-title">
+    <div class="acc-modal card shadow">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2 id="ig-pick-title" class="h6 mb-0">Choose Instagram account</h2>
+        <button type="button" class="btn-close" (click)="closeIgModal()" [disabled]="busy" aria-label="Close"></button>
+      </div>
+      <div class="card-body">
+        @if (igLoadingPick) {
+          <p class="text-muted small mb-0">Loading your pages…</p>
+        } @else if (igPending?.accounts?.length) {
+          <ul class="list-group list-group-flush">
+            @for (a of igPending!.accounts; track a.accountId) {
+              <li
+                class="list-group-item d-flex align-items-center gap-2 py-2 acc-pick-item"
+                (click)="selectIg(a)"
+                (keydown.enter)="selectIg(a)"
+                tabindex="0"
+                role="button"
+              >
+                @if (a.profilePicture) {
+                  <img [src]="a.profilePicture" alt="" class="acc-avatar rounded-circle" width="40" height="40" />
+                } @else {
+                  <span class="acc-avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center">IG</span>
+                }
+                <div>
+                  <div class="fw-medium">&#64;{{ a.username || a.accountId }}</div>
+                  <div class="text-muted small">ID {{ a.accountId }}</div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- YouTube multi-channel -->
+@if (showYtModal) {
+  <div class="acc-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="yt-pick-title">
+    <div class="acc-modal card shadow">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2 id="yt-pick-title" class="h6 mb-0">Choose YouTube channel</h2>
+        <button type="button" class="btn-close" (click)="closeYtModal()" [disabled]="busy" aria-label="Close"></button>
+      </div>
+      <div class="card-body">
+        @if (ytLoadingPick) {
+          <p class="text-muted small mb-0">Loading your channels…</p>
+        } @else if (ytPending?.channels?.length) {
+          <ul class="list-group list-group-flush">
+            @for (c of ytPending!.channels; track c.channelId) {
+              <li
+                class="list-group-item d-flex align-items-center gap-2 py-2 acc-pick-item"
+                (click)="selectYt(c)"
+                (keydown.enter)="selectYt(c)"
+                tabindex="0"
+                role="button"
+              >
+                @if (c.thumb) {
+                  <img [src]="c.thumb" alt="" class="acc-avatar rounded-circle" width="40" height="40" />
+                } @else {
+                  <span class="acc-avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center">▶</span>
+                }
+                <div>
+                  <div class="fw-medium">{{ c.title }}</div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </div>
+}
+
 <div class="card border-0 shadow-sm mb-4" id="connect-accounts" tabindex="-1">
   <div class="card-header bg-white border-0 py-3">
     <h2 class="h5 mb-0 fw-semibold">Connected accounts</h2>
@@ -20,7 +97,7 @@
       <div class="col-12 col-md-6">
         <div class="border rounded-3 p-3 h-100 d-flex flex-column acc-panel">
           <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-            <span class="fs-3" aria-hidden="true" role="img">📷</span>
+            <span class="acc-plat-icon" aria-hidden="true" title="Instagram">◎</span>
             <span class="fw-semibold">Instagram</span>
             @if (igOk) {
               <span class="badge text-bg-success">Connected</span>
@@ -28,17 +105,35 @@
               <span class="badge text-bg-secondary">Not connected</span>
             }
           </div>
-          <p class="text-muted small mb-2">
-            @if (status?.instagram?.username) {
-              <span class="text-body">&#64;{{ status?.instagram?.username }}</span>
-            } @else if (igAccounts.length) {
-              @for (a of igAccounts; track a._id) {
-                <span class="d-block">&#64;{{ a.username || a.igUserId }}</span>
-              }
+          <div class="d-flex align-items-center gap-2 mb-2">
+            @if (status?.instagram?.profilePicture) {
+              <img
+                [src]="status!.instagram.profilePicture"
+                alt=""
+                class="acc-avatar rounded-circle"
+                width="40"
+                height="40"
+              />
+            } @else if (igPfp(igAccounts[0])) {
+              <img [src]="igPfp(igAccounts[0])!" alt="" class="acc-avatar rounded-circle" width="40" height="40" />
             } @else {
-              Not linked. Business or Creator account required.
+              <span
+                class="acc-avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center"
+                >IG</span
+              >
             }
-          </p>
+            <p class="text-muted small mb-0 flex-grow-1">
+              @if (status?.instagram?.username) {
+                <span class="text-body d-block">&#64;{{ status?.instagram?.username }}</span>
+              } @else if (igAccounts.length) {
+                @for (a of igAccounts; track a._id) {
+                  <span class="d-block">&#64;{{ a.username || a.igUserId }}</span>
+                }
+              } @else {
+                Not linked. Business or Creator account required.
+              }
+            </p>
+          </div>
           <div class="mt-auto d-flex flex-wrap gap-2 pt-2">
             <button
               type="button"
@@ -47,10 +142,18 @@
               (click)="connectInstagram()"
             >
               @if (igOk) {
-                <span>Reconnect / another account</span>
+                <span>Connect / add account</span>
               } @else {
                 <span>Connect Instagram</span>
               }
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              [disabled]="busy || !igOk"
+              (click)="refreshInstagram()"
+            >
+              Refresh
             </button>
             @for (a of igAccounts; track a._id) {
               <button
@@ -68,7 +171,7 @@
       <div class="col-12 col-md-6">
         <div class="border rounded-3 p-3 h-100 d-flex flex-column acc-panel">
           <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-            <span class="fs-3" aria-hidden="true" role="img">▶</span>
+            <span class="acc-plat-icon" aria-hidden="true" title="YouTube">▶</span>
             <span class="fw-semibold">YouTube</span>
             @if (ytOk) {
               <span class="badge text-bg-success">Connected</span>
@@ -76,17 +179,35 @@
               <span class="badge text-bg-secondary">Not connected</span>
             }
           </div>
-          <p class="text-muted small mb-2">
-            @if (status?.youtube?.channelName) {
-              <span class="text-body">{{ status?.youtube?.channelName }}</span>
-            } @else if (ytAccounts.length) {
-              @for (c of ytAccounts; track c._id) {
-                <span class="d-block">{{ c.channelTitle }}</span>
-              }
+          <div class="d-flex align-items-center gap-2 mb-2">
+            @if (status?.youtube?.thumbnail) {
+              <img
+                [src]="status!.youtube.thumbnail"
+                alt=""
+                class="acc-avatar rounded-circle"
+                width="40"
+                height="40"
+              />
+            } @else if (ytAccounts[0] && ytAccounts[0].thumbnailUrl) {
+              <img [src]="ytAccounts[0]!.thumbnailUrl" alt="" class="acc-avatar rounded-circle" width="40" height="40" />
             } @else {
-              Approve in Google, then you’ll return to the dashboard.
+              <span
+                class="acc-avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center"
+                >▶</span
+              >
             }
-          </p>
+            <p class="text-muted small mb-0 flex-grow-1">
+              @if (status?.youtube?.channelName) {
+                <span class="text-body d-block">{{ status?.youtube?.channelName }}</span>
+              } @else if (ytAccounts.length) {
+                @for (c of ytAccounts; track c._id) {
+                  <span class="d-block">{{ c.channelTitle }}</span>
+                }
+              } @else {
+                Approve in Google, then you’ll return to the dashboard.
+              }
+            </p>
+          </div>
           @if (ytRedirectUri) {
             <div class="alert alert-light border small py-2 mb-2 text-break">
               <span class="fw-medium">Google Cloud</span> — add this redirect URI to OAuth client →
@@ -102,10 +223,18 @@
               (click)="connectYoutube()"
             >
               @if (ytOk) {
-                <span>Reconnect / add channel</span>
+                <span>Connect / add channel</span>
               } @else {
                 <span>Connect YouTube</span>
               }
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              [disabled]="busy || !ytOk"
+              (click)="refreshYoutube()"
+            >
+              Refresh
             </button>
             @for (c of ytAccounts; track c._id) {
               <button

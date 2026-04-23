@@ -5,3 +5,51 @@
 code {
   font-size: 0.85em;
 }
+
+.acc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.acc-modal {
+  width: 100%;
+  max-width: 24rem;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.acc-pick-item {
+  cursor: pointer;
+  user-select: none;
+}
+
+.acc-pick-item:hover {
+  background: var(--bs-light, #f8f9fa);
+}
+
+.acc-avatar {
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.acc-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  background: #e9ecef;
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.acc-plat-icon {
+  width: 2rem;
+  text-align: center;
+  line-height: 1;
+  font-size: 1.25rem;
+  opacity: 0.9;
+}

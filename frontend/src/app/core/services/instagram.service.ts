@@ -10,6 +10,7 @@ export interface IgAccount {
   label?: string;
   isDefault?: boolean;
   tokenExpiresAt?: string;
+  profilePictureUrl?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -22,6 +23,27 @@ export class InstagramService {
 
   getAuthUrl(): Observable<{ url: string }> {
     return this.http.get<{ url: string }>(`${environment.apiUrl}/instagram/auth-url`);
+  }
+
+  getOAuthPending(key: string): Observable<{
+    pickKey: string;
+    accounts: { accountId: string; pageId: string; username: string; profilePicture: string }[];
+  }> {
+    return this.http.get<{
+      pickKey: string;
+      accounts: { accountId: string; pageId: string; username: string; profilePicture: string }[];
+    }>(`${environment.apiUrl}/instagram/oauth-pending`, { params: { key } });
+  }
+
+  selectAccount(pickKey: string, accountId: string) {
+    return this.http.post<{ ok: boolean; id: string; username: string; igUserId: string }>(
+      `${environment.apiUrl}/instagram/select-account`,
+      { pickKey, accountId }
+    );
+  }
+
+  refreshTokens() {
+    return this.http.post<{ ok: boolean; total: number }>(`${environment.apiUrl}/instagram/refresh-tokens`, {});
   }
 
   link(body: {

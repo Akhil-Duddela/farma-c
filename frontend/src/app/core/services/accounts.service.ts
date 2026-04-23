@@ -4,8 +4,20 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AccountsStatus {
-  instagram: { connected: boolean; username: string | null };
-  youtube: { connected: boolean; channelName: string | null };
+  instagram: {
+    connected: boolean;
+    username: string | null;
+    profilePicture: string | null;
+    accountId: string | null;
+    igUserId: string | null;
+  };
+  youtube: {
+    connected: boolean;
+    channelName: string | null;
+    thumbnail: string | null;
+    accountId: string | null;
+    channelId: string | null;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
