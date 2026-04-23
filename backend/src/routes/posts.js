@@ -1,6 +1,7 @@
 const express = require('express');
 const postController = require('../controllers/postController');
 const { authenticate } = require('../middleware/auth');
+const { requireFullVerification } = require('../middleware/requireFullVerification');
 const { validateBody } = require('../middleware/validateJoi');
 const {
   postCreateV2,
@@ -16,16 +17,20 @@ const {
 const router = express.Router();
 router.use(authenticate);
 
+const mustVerify = requireFullVerification;
+
 router.get('/', postController.list);
 router.get('/trending-tags', postController.trendingTags);
 
 router.post(
   '/create',
+  mustVerify,
   validateBody(postCreateV2, { stripScripts: ['content', 'caption'] }),
   postController.createMulti
 );
 router.post(
   '/bulk',
+  mustVerify,
   validateBody(postBulk, { stripScripts: [] }),
   postController.bulk
 );
@@ -46,6 +51,7 @@ router.post(
 );
 router.post(
   '/:id/retry',
+  mustVerify,
   validateBody(postRetryPlatforms),
   postController.retryPlatforms
 );
@@ -53,6 +59,7 @@ router.post(
 router.get('/:id', postController.getOne);
 router.post(
   '/',
+  mustVerify,
   validateBody(postCreate, {
     stripScripts: ['caption', 'content'],
   }),
@@ -60,11 +67,12 @@ router.post(
 );
 router.patch(
   '/:id',
+  mustVerify,
   validateBody(postUpdate, {
     stripScripts: ['caption', 'content'],
   }),
   postController.update
 );
-router.delete('/:id', postController.remove);
+router.delete('/:id', mustVerify, postController.remove);
 
 module.exports = router;

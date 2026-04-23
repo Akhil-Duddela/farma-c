@@ -7,6 +7,12 @@
     @if (error) {
       <div class="alert alert-danger py-2 small" role="alert">{{ error }}</div>
     }
+    @if (!auth.canUsePublishing()) {
+      <div class="alert alert-info py-2 small" role="status">
+        <strong>Verification required</strong> — you can use AI above, but posting needs a verified account.
+        <a routerLink="/verification" class="alert-link">Complete verification</a>
+      </div>
+    }
     <form (ngSubmit)="$event.preventDefault()">
       <div class="mb-3">
         <label class="form-label" for="content">Caption / content</label>
@@ -153,7 +159,7 @@
         <button
           type="button"
           class="btn btn-info text-white"
-          [disabled]="loading || uploadBusy"
+          [disabled]="loading || uploadBusy || !auth.canUsePublishing()"
           (click)="submit('now')"
         >
           @if (loading || uploadBusy) {
@@ -172,7 +178,7 @@
         <button
           type="button"
           class="btn btn-outline-secondary"
-          [disabled]="loading || uploadBusy"
+          [disabled]="loading || uploadBusy || !auth.canUsePublishing()"
           (click)="submit('draft')"
         >
           Save as draft

@@ -5,11 +5,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription, interval, switchMap, startWith } from 'rxjs';
 import { PostService, Post } from '../../core/services/post.service';
 import { AutomationService } from '../../core/services/automation.service';
+import { AuthService } from '../../core/services/auth.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-automation-pipeline',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './automation-pipeline.component.html',
   styleUrl: './automation-pipeline.component.scss',
 })
@@ -17,6 +19,7 @@ export class AutomationPipelineComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly auto = inject(AutomationService);
   private readonly posts = inject(PostService);
+  readonly auth = inject(AuthService);
   private pollSub: Subscription | null = null;
 
   /** Notify parent to refresh the post table */
@@ -35,6 +38,7 @@ export class AutomationPipelineComponent implements OnInit, OnDestroy {
   history: Post[] = [];
 
   ngOnInit(): void {
+    this.auth.refreshUser().subscribe({ error: () => undefined });
     this.loadHistory();
   }
 
@@ -48,6 +52,10 @@ export class AutomationPipelineComponent implements OnInit, OnDestroy {
 
   run(): void {
     this.error = '';
+    if (!this.auth.canUsePublishing()) {
+      this.error = 'Complete verification to unlock automation.';
+      return;
+    }
     if (this.form.invalid) {
       this.form.get('input')?.markAsTouched();
       return;

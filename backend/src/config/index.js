@@ -116,4 +116,16 @@ module.exports = {
     openaiTimeoutMs: parseInt(process.env.OPENAI_TIMEOUT_MS || '120000', 10),
     maxRetries: Math.min(4, Math.max(1, parseInt(process.env.AI_MAX_RETRIES || '2', 10) || 2)),
   },
+  email: {
+    from: (process.env.SMTP_FROM || process.env.EMAIL_FROM || 'Farm-C AI <noreply@localhost>').trim(),
+    smtpUrl: (process.env.SMTP_URL || '').trim(),
+  },
+  twilio: {
+    accountSid: (process.env.TWILIO_ACCOUNT_SID || '').trim(),
+    authToken: (process.env.TWILIO_AUTH_TOKEN || '').trim(),
+    fromNumber: (process.env.TWILIO_FROM_NUMBER || '').trim(),
+  },
+  /** Minutes */
+  emailVerifyTtlMin: Math.min(10080, Math.max(10, parseInt(process.env.EMAIL_VERIFY_TTL_MIN || '10080', 10) || 10080)),
+  otpTtlMin: Math.min(30, Math.max(5, parseInt(process.env.OTP_TTL_MIN || '10', 10) || 10)),
 };

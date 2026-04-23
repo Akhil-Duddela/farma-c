@@ -1,13 +1,15 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PostService } from '../../core/services/post.service';
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-post-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './post-form.component.html',
   styleUrl: './post-form.component.scss',
 })
@@ -16,6 +18,7 @@ export class PostFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly posts = inject(PostService);
   private readonly ig = inject(InstagramService);
+  readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   accounts: IgAccount[] = [];
@@ -38,6 +41,7 @@ export class PostFormComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.auth.refreshUser().subscribe({ error: () => undefined });
     this.ig.list().subscribe((a) => {
       this.accounts = a;
       const def = a.find((x) => x.isDefault) || a[0];
@@ -76,6 +80,10 @@ export class PostFormComponent implements OnInit {
 
   save(): void {
     if (this.form.invalid) return;
+    if (!this.auth.canUsePublishing()) {
+      this.error = 'Complete verification to save and schedule posts.';
+      return;
+    }
     this.loading = true;
     this.error = '';
     const v = this.form.getRawValue();

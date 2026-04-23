@@ -160,6 +160,23 @@ const authLogin = Joi.object({
   password: Joi.string().min(1).max(500).required(),
 });
 
+const authSendOtp = Joi.object({
+  phoneNumber: Joi.string().min(8).max(20).required(),
+});
+
+const authVerifyOtp = Joi.object({
+  phoneNumber: Joi.string().min(8).max(20).required(),
+  otp: Joi.string().length(6).pattern(/^\d+$/).required(),
+});
+
+const adminProfileReview = Joi.object({
+  userId: Joi.string()
+    .pattern(/^[a-fA-F0-9]{24}$/)
+    .required(),
+  action: Joi.string().valid('approve', 'reject').required(),
+  notes: Joi.string().max(2000).allow('').optional(),
+});
+
 module.exports = {
   aiEnhance,
   automationRun,
@@ -173,6 +190,9 @@ module.exports = {
   improveCaption,
   authRegister,
   authLogin,
+  authSendOtp,
+  authVerifyOtp,
+  adminProfileReview,
   MAX_TEXT,
   MAX_CAPTION,
 };

@@ -9,7 +9,7 @@ async function authenticate(req, res, next) {
     }
     const token = header.slice(7);
     const payload = authService.verifyToken(token);
-    const user = await User.findById(payload.sub).select('-passwordHash');
+    const user = await User.findById(payload.sub).select('-passwordHash -emailVerificationToken -otpHash');
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User not found or inactive' });
     }

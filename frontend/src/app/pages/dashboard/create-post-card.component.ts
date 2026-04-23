@@ -9,13 +9,15 @@ import { InstagramService, IgAccount } from '../../core/services/instagram.servi
 import { YoutubeService, YoutubeAccount } from '../../core/services/youtube.service';
 import { UploadService } from '../../core/services/upload.service';
 import { CreatePostPrefillService } from '../../core/services/create-post-prefill.service';
+import { AuthService } from '../../core/services/auth.service';
+import { RouterLink } from '@angular/router';
 
 type MediaKind = 'image' | 'video' | 'reel';
 
 @Component({
   selector: 'app-create-post-card',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './create-post-card.component.html',
   styleUrl: './create-post-card.component.scss',
 })
@@ -26,6 +28,7 @@ export class CreatePostCardComponent implements OnInit {
   private readonly yt = inject(YoutubeService);
   private readonly upload = inject(UploadService);
   private readonly prefill = inject(CreatePostPrefillService);
+  readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -52,6 +55,7 @@ export class CreatePostCardComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.auth.refreshUser().subscribe({ error: () => undefined });
     this.ig.list().subscribe((a) => (this.igAccounts = a));
     this.yt.list().subscribe((a) => (this.ytAccounts = a));
     this.applyPrefill();
@@ -191,6 +195,10 @@ export class CreatePostCardComponent implements OnInit {
       postMode: after === 'schedule' ? 'schedule' : after === 'draft' ? 'draft' : 'now',
     });
     this.error = '';
+    if (!this.auth.canUsePublishing()) {
+      this.error = 'Complete verification to unlock posting.';
+      return;
+    }
     const err = this.validate();
     if (err) {
       this.error = err;

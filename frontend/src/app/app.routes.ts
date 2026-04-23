@@ -12,10 +12,13 @@ import { SettingsComponent } from './pages/settings/settings.component';
 import { AnalyticsComponent } from './pages/analytics/analytics.component';
 import { YoutubeOauthResultComponent } from './pages/youtube/youtube-oauth-result.component';
 import { AiEnhancerComponent } from './components/ai-enhancer/ai-enhancer.component';
+import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
+import { VerificationComponent } from './pages/verification/verification.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'verify-email', component: VerifyEmailComponent },
   {
     path: '',
     component: ShellComponent,
@@ -32,6 +35,7 @@ export const routes: Routes = [
       { path: 'analytics', component: AnalyticsComponent },
       { path: 'youtube/oauth-result', component: YoutubeOauthResultComponent },
       { path: 'ai', component: AiEnhancerComponent },
+      { path: 'verification', component: VerificationComponent },
     ],
   },
   { path: '**', redirectTo: '' },

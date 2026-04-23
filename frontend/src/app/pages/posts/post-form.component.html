@@ -10,6 +10,12 @@
   @if (error) {
     <div class="alert alert-danger border-0 shadow-sm mb-3" role="alert">{{ error }}</div>
   }
+  @if (!auth.canUsePublishing()) {
+    <div class="alert alert-info border-0 shadow-sm small mb-3" role="status">
+      <strong>Verification required</strong> to save or schedule. AI actions below still work.
+      <a routerLink="/verification" class="ms-1">Open verification</a>
+    </div>
+  }
 
   <div class="row g-3 g-lg-4">
     <div class="col-12 col-lg-8">
@@ -106,7 +112,11 @@
           }
 
           <div class="d-grid d-sm-block">
-            <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
+            <button
+              class="btn primary"
+              type="submit"
+              [disabled]="loading || form.invalid || !auth.canUsePublishing()"
+            >
               {{ loading ? 'Saving…' : 'Save' }}
             </button>
           </div>

@@ -1,3 +1,10 @@
+@if (!auth.canUsePublishing()) {
+  <div class="alert alert-warning border-0 rounded-0 small mb-0 text-center py-2" role="status">
+    <strong>Verification required</strong> — complete email, phone, and profile to unlock posting and automation.
+    <a routerLink="/verification" class="alert-link">Open verification</a>
+  </div>
+}
+
 <header
   class="app-topbar d-lg-none d-flex align-items-center justify-content-between gap-2 px-3 py-2 shadow-sm"
   role="banner"
@@ -115,5 +122,12 @@
     (click)="closeNav()"
     class="offcanvas-link"
     >Settings</a
+  >
+  <a
+    routerLink="/verification"
+    routerLinkActive="active"
+    (click)="closeNav()"
+    class="offcanvas-link"
+    >Verification</a
   >
 </ng-template>

@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const config = require('../config');
+const logger = require('../utils/logger');
+const verificationService = require('./verificationService');
 
 async function register({ email, password, name }) {
   const existing = await User.findOne({ email: email.toLowerCase() });
@@ -14,7 +16,15 @@ async function register({ email, password, name }) {
     email: email.toLowerCase(),
     passwordHash,
     name: name || '',
+    emailVerified: false,
+    phoneVerified: false,
+    verificationStatus: 'unverified',
   });
+  try {
+    await verificationService.sendEmailVerificationForUser(user);
+  } catch (e) {
+    logger.error('post-register email verification', { err: e.message, userId: String(user._id) });
+  }
   return user;
 }
 

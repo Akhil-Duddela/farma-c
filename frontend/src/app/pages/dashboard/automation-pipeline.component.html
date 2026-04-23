@@ -7,7 +7,13 @@
     @if (error) {
       <div class="alert alert-warning small py-2">{{ error }}</div>
     }
-    <form [formGroup]="form" (ngSubmit)="run()" class="mb-3">
+    @if (!auth.canUsePublishing()) {
+      <div class="alert alert-info small py-2" role="status">
+        <strong>Verification required</strong> for automation.
+        <a routerLink="/verification" class="alert-link">Complete verification</a>
+      </div>
+    }
+    <form [formGroup]="form" (ngSubmit)="run()" class="mb-3" [class.opacity-50]="!auth.canUsePublishing()">
       <label class="form-label" for="auto-idea">Idea / topic</label>
       <textarea
         id="auto-idea"
@@ -26,7 +32,11 @@
           <label class="form-check-label small" for="ayt">YouTube Shorts</label>
         </div>
       </div>
-      <button class="btn btn-primary btn-pipeline" type="submit" [disabled]="busy">
+      <button
+        class="btn btn-primary btn-pipeline"
+        type="submit"
+        [disabled]="busy || !auth.canUsePublishing()"
+      >
         @if (busy) {
           <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
         }

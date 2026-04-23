@@ -20,6 +20,7 @@ const uploadRoutes = require('./routes/upload');
 const aiRoutes = require('./routes/aiRoutes');
 const automationRoutes = require('./routes/automationRoutes');
 const accountsRoutes = require('./routes/accounts');
+const profileRoutes = require('./routes/profile');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -99,6 +100,7 @@ app.use('/api/ai', limiterAI, aiRoutes);
 app.use('/api/posts', limiterPosts, postRoutes);
 app.use('/api/auth', limiterDefault, authRoutes);
 app.use('/api/accounts', limiterDefault, accountsRoutes);
+app.use('/api/profile', limiterDefault, profileRoutes);
 app.use('/api/instagram', limiterDefault, instagramRoutes);
 app.use('/api/logs', limiterDefault, logRoutes);
 app.use('/api/settings', limiterDefault, settingsRoutes);

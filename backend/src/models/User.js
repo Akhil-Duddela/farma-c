@@ -24,6 +24,27 @@ const userSchema = new mongoose.Schema(
     dailyAutoPostCount: { type: Number, default: 0, min: 0, max: 10 },
     dailyAutoPostHourIST: { type: Number, default: 9, min: 0, max: 23 },
     isActive: { type: Boolean, default: true },
+
+    /** HMAC-SHA256 (hex) of the raw email link token; raw token is never stored */
+    emailVerificationToken: { type: String, default: '', index: true, sparse: true },
+    emailVerified: { type: Boolean, default: false, index: true },
+    emailVerificationExpires: { type: Date, default: null },
+    lastVerificationEmailAt: { type: Date, default: null },
+
+    phoneNumber: { type: String, default: null, trim: true, sparse: true, index: true },
+    phoneVerified: { type: Boolean, default: false, index: true },
+    /** Bcrypt hash of 6-digit OTP; plaintext OTP is never stored */
+    otpHash: { type: String, default: '' },
+    otpExpires: { type: Date, default: null },
+
+    profileImageUrl: { type: String, default: '' },
+    verificationStatus: {
+      type: String,
+      enum: ['unverified', 'pending', 'verified', 'rejected'],
+      default: 'unverified',
+      index: true,
+    },
+    verificationNotes: { type: String, default: '' },
   },
   { timestamps: true }
 );
@@ -35,5 +56,17 @@ userSchema.methods.comparePassword = function comparePassword(plain) {
 userSchema.statics.hashPassword = async function hashPassword(plain) {
   return bcrypt.hash(plain, 12);
 };
+
+/**
+ * @param {import('mongoose').Document} u
+ * @returns {boolean}
+ */
+function isFullyVerifiedUser(u) {
+  return (
+    u.emailVerified === true && u.phoneVerified === true && String(u.verificationStatus) === 'verified'
+  );
+}
+
+userSchema.statics.isFullyVerified = isFullyVerifiedUser;
 
 module.exports = mongoose.model('User', userSchema);
