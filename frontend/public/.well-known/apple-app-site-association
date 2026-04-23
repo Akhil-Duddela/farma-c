@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.farmcai.farmCAiMobile",
+        "paths": ["/verify-email*", "/oauth*", "/dashboard*"]
+      }
+    ]
+  }
+}

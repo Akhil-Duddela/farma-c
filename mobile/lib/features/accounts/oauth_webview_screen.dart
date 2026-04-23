@@ -7,7 +7,7 @@ import '../../core/config/app_config.dart';
 import '../../core/repositories/farmc_api.dart';
 import '../../core/utils/ui_feedback.dart';
 
-/// OAuth: backend redirects to [AppConfig.webAppOrigin]/dashboard?ig=...|yt=...
+/// OAuth: backend redirects to [AppConfig.webAppOrigin]/oauth?ig=...|yt=... (or legacy /dashboard?...)
 class OAuthWebViewScreen extends ConsumerStatefulWidget {
   const OAuthWebViewScreen({super.key, required this.url, this.type = 'ig'});
 
@@ -46,7 +46,7 @@ class _OAuthWebViewScreenState extends ConsumerState<OAuthWebViewScreen> {
       return;
     }
     final base = AppConfig.webAppOrigin.replaceAll(RegExp(r'/$'), '');
-    if (!u.startsWith(base) && !u.contains('dashboard')) {
+    if (!u.startsWith(base) && !u.contains('dashboard') && !u.contains('/oauth')) {
       return;
     }
     final uri = Uri.tryParse(u);

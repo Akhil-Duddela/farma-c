@@ -36,6 +36,22 @@ flutter analyze
 flutter test
 ```
 
-## Deep links / OAuth
+## Deep links (email + OAuth)
 
-OAuth flows open a **WebView**; the web app should redirect to `WEB_APP_ORIGIN` with query params (`ig`, `yt`) as implemented in `lib/features/accounts/oauth_webview_screen.dart`. Register the same host for **iOS associated domains** / **Android app links** if you use custom URL schemes for email verification (optional next step).
+The app uses **`app_links`**: cold start and warm start URIs are handled in `lib/core/services/deep_link_bootstrap.dart`.
+
+- **Universal Links (HTTPS)**: `https://<FRONTEND_HOST>/verify-email?…` and `https://<FRONTEND_HOST>/oauth?ig=…|yt=…` (legacy `/dashboard?` still parsed).
+- **Custom scheme**: `farmcai://verify-email?token=…`, `farmcai://oauth?ig=…` (override with `--dart-define=DEEPLINK_CUSTOM_SCHEME=…`).
+
+`WEB_APP_ORIGIN` / `DEEPLINK_HOST` must match the **same host** you ship in the manifest (Android) and **Associated Domains** (iOS) for verification to be consistent.
+
+| Build define | Role |
+|--------------|------|
+| `WEB_APP_ORIGIN` | Must match the SPA; used to match incoming HTTPS host |
+| `DEEPLINK_HOST` | Optional; if set, must equal the host in `WEB_APP_ORIGIN` |
+
+**Android**: `AndroidManifest.xml` — `farma-c-ui.onrender.com` and `https` paths. Replace the host in source when you use your own domain, then publish `/.well-known/assetlinks.json` (see `frontend/public/.well-known/`) and add your app’s **release SHA-256** fingerprint.
+
+**iOS**: `Info.plist` URL scheme `farmcai` + `Runner.entitlements` for `applinks:` — replace the domain/Team ID in `public/.well-known/apple-app-site-association` and in Xcode **Signing & Capabilities** → **Associated Domains** if needed.
+
+OAuth in WebView: callbacks land on `/oauth?…` on the SPA; the in-app webview and native deep link handler both recognize that path and legacy `dashboard?…`.

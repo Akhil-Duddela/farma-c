@@ -18,4 +18,18 @@ class AppConfig {
     'WEB_APP_ORIGIN',
     defaultValue: 'https://farma-c-ui.onrender.com',
   );
+
+  /// Custom URL scheme for in-app / WebView "Open app" (e.g. `farmcai://link/…`)
+  static const String deepLinkCustomScheme = String.fromEnvironment(
+    'DEEPLINK_CUSTOM_SCHEME',
+    defaultValue: 'farmcai',
+  );
+
+  /// If set, must match the HTTPS host in [webAppOrigin] (without scheme). Unset = derive from [webAppOrigin]
+  static const String deepLinkWebHost = String.fromEnvironment('DEEPLINK_HOST', defaultValue: '');
+
+  static String get webHostForLinks {
+    final s = deepLinkWebHost.isNotEmpty ? deepLinkWebHost : Uri.parse(webAppOrigin).host;
+    return s;
+  }
 }

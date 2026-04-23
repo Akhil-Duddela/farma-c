@@ -13,13 +13,13 @@ const frontendBase = config.frontendUrl;
 
 function redirectUrl(ok, errCode) {
   if (ok) {
-    return `${frontendBase}/dashboard?ig=connected`;
+    return `${frontendBase}/oauth?ig=connected`;
   }
-  return `${frontendBase}/dashboard?ig=error&reason=${encodeURIComponent(errCode || 'unknown')}`;
+  return `${frontendBase}/oauth?ig=error&reason=${encodeURIComponent(errCode || 'unknown')}`;
 }
 
 function pickWithKeyUrl(pickKey) {
-  return `${frontendBase}/dashboard?ig=choose&key=${encodeURIComponent(pickKey)}`;
+  return `${frontendBase}/oauth?ig=choose&key=${encodeURIComponent(pickKey)}`;
 }
 
 /**

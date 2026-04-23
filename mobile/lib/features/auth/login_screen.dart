@@ -7,7 +7,9 @@ import '../../core/services/auth_state.dart';
 import '../../core/utils/ui_feedback.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.hint});
+
+  final String? hint;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -58,6 +60,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               const SizedBox(height: 32),
               Text('Welcome back', style: Theme.of(context).textTheme.headlineMedium),
+              if (widget.hint != null && widget.hint!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      widget.hint!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               TextFormField(
                 controller: _email,

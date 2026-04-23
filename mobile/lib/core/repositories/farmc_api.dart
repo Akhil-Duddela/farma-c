@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/api_client.dart';
+import '../services/api_error.dart';
 
 final farmCApiProvider = Provider<FarmCApi>((ref) => FarmCApi(ref));
 
@@ -39,6 +41,19 @@ class FarmCApi {
 
   Future<void> resendEmail() async {
     await _ref.postData('/auth/resend-verification');
+  }
+
+  /// Public email verification (no prior login). Uses `json=1` to avoid follow redirects.
+  Future<void> verifyEmailByToken(String token) async {
+    try {
+      await _ref.read(apiClientProvider).get(
+            '/auth/verify-email',
+            queryParameters: <String, dynamic>{'token': token, 'json': '1'},
+          );
+    } on DioException catch (e) {
+      final a = parseDioError(e);
+      throw a ?? Exception(e.message);
+    }
   }
 
   /// [captchaToken] required when server uses hCaptcha (empty for local dev)

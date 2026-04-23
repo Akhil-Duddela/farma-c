@@ -14,6 +14,7 @@ import { AnalyticsComponent } from './pages/analytics/analytics.component';
 import { YoutubeOauthResultComponent } from './pages/youtube/youtube-oauth-result.component';
 import { AiEnhancerComponent } from './components/ai-enhancer/ai-enhancer.component';
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
+import { OauthRedirectComponent } from './pages/oauth-redirect/oauth-redirect.component';
 import { VerificationComponent } from './pages/verification/verification.component';
 import { AdminVerificationsComponent } from './pages/admin/admin-verifications.component';
 import { LeaderboardComponent } from './pages/leaderboard/leaderboard.component';
@@ -29,6 +30,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
+      { path: 'oauth', component: OauthRedirectComponent },
       { path: 'posts', component: PostListComponent },
       { path: 'posts/new', component: PostFormComponent },
       { path: 'posts/:id/edit', component: PostFormComponent },

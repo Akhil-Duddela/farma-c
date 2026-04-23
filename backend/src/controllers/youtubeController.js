@@ -52,13 +52,13 @@ const frontendBase = config.frontendUrl;
 
 function oauthResultUrl(ok, errCode) {
   if (ok) {
-    return `${frontendBase}/dashboard?yt=connected`;
+    return `${frontendBase}/oauth?yt=connected`;
   }
-  return `${frontendBase}/dashboard?yt=error&reason=${encodeURIComponent(errCode || 'unknown')}`;
+  return `${frontendBase}/oauth?yt=error&reason=${encodeURIComponent(errCode || 'unknown')}`;
 }
 
 function pickWithKeyUrl(pickKey) {
-  return `${frontendBase}/dashboard?yt=choose&key=${encodeURIComponent(pickKey)}`;
+  return `${frontendBase}/oauth?yt=choose&key=${encodeURIComponent(pickKey)}`;
 }
 
 /**

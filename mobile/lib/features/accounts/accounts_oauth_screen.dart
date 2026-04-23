@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/repositories/farmc_api.dart';
+import '../../core/services/deep_link_provider.dart';
 import '../../core/utils/ui_feedback.dart';
 
 class AccountsOAuthScreen extends ConsumerStatefulWidget {
@@ -93,6 +94,21 @@ class _AccountsOAuthScreenState extends ConsumerState<AccountsOAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(accountsOauthRefreshTriggerProvider, (prev, next) {
+      if (next > (prev ?? 0)) {
+        _refresh();
+      }
+    });
+    ref.listen<String?>(accountsOauthMessageProvider, (prev, next) {
+      if (next == null || next.isEmpty) {
+        return;
+      }
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(context, next, error: next.startsWith('Error') || next.startsWith('error'));
+      ref.read(accountsOauthMessageProvider.notifier).state = null;
+    });
     if (_load) {
       return const Center(child: CircularProgressIndicator());
     }

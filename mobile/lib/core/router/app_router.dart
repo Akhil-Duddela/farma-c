@@ -15,6 +15,7 @@ import '../../features/accounts/accounts_oauth_screen.dart';
 import '../../features/accounts/oauth_webview_screen.dart';
 import '../../features/analytics/analytics_screen.dart';
 import '../../features/leaderboard/leaderboard_screen.dart';
+import '../../features/verification/verify_callback_screen.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
@@ -38,8 +39,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(
+        path: '/verify-callback',
+        builder: (c, s) {
+          final q = s.uri.queryParameters;
+          return VerifyCallbackScreen(
+            token: q['token'],
+            result: q['result'],
+            reason: q['reason'],
+          );
+        },
+      ),
+      GoRoute(
         path: '/login',
-        builder: (c, s) => const LoginScreen(),
+        builder: (c, s) => LoginScreen(
+          hint: s.uri.queryParameters['message'],
+        ),
       ),
       GoRoute(
         path: '/register',
