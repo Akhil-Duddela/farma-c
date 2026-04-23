@@ -87,10 +87,18 @@ const postSchema = new mongoose.Schema(
     lastJobId: { type: String, default: '' },
     analytics: {
       likes: { type: Number, default: 0 },
+      /** Future-ready: Shorts/IG Reels play counts when available from platform APIs */
+      views: { type: Number, default: 0 },
       reach: { type: Number, default: 0 },
       impressions: { type: Number, default: 0 },
       lastSyncedAt: { type: Date, default: null },
     },
+    /** 0+ derived from analytics for ranking; updated on insight sync */
+    engagementScore: { type: Number, default: 0, index: true },
+    /** One stats row per final aggregate status transition (for creator counts) */
+    lastStatsKey: { type: String, default: '' },
+    /** user.creatorStats.totalPostAttempts counted once per post (first non-draft) */
+    statsCountForUser: { type: Boolean, default: false, index: true },
     generationMeta: {
       model: String,
       promptVersion: String,

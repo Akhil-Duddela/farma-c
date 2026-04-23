@@ -22,6 +22,7 @@ const automationRoutes = require('./routes/automationRoutes');
 const accountsRoutes = require('./routes/accounts');
 const profileRoutes = require('./routes/profile');
 const adminRoutes = require('./routes/admin');
+const userPlatformRoutes = require('./routes/users');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -98,6 +99,7 @@ app.get('/health/ready', (req, res) => {
 });
 
 app.use('/api/ai', limiterAI, aiRoutes);
+app.use('/api/users', limiterDefault, userPlatformRoutes);
 app.use('/api/posts', limiterPosts, postRoutes);
 app.use('/api/auth', limiterDefault, authRoutes);
 app.use('/api/accounts', limiterDefault, accountsRoutes);

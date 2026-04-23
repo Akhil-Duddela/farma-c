@@ -21,6 +21,11 @@ export interface User {
   verificationNotes?: string;
   canUsePublishing?: boolean;
   hasVerifiedCreatorBadge?: boolean;
+  /** Platform gamification (server-maintained) */
+  badges?: string[];
+  riskScore?: number;
+  flagged?: boolean;
+  creatorLevel?: string;
 }
 
 @Injectable({ providedIn: 'root' })

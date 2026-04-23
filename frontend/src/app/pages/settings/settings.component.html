@@ -2,8 +2,14 @@
   <div>
     <h1>Settings</h1>
     <p class="muted mb-0">Profile, timezone (IST default), and linked social accounts</p>
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+      <app-creator-badges [ids]="auth.user()?.badges || []" />
+    </div>
   </div>
 </div>
+@if (auth.user()?.flagged) {
+  <div class="alert border-danger text-danger my-2" role="alert">Your account is under security review. Posting and automation are restricted until resolved.</div>
+}
 
 @if (error) {
   <div class="alert">{{ error }}</div>

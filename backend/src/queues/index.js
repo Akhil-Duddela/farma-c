@@ -3,6 +3,8 @@ const config = require('../config');
 const DeadLetterJob = require('../models/DeadLetterJob');
 const logger = require('../utils/logger');
 
+const SLOW_MS = Math.max(10000, parseInt(process.env.SLOW_JOB_LOG_MS || '120000', 10) || 120000);
+
 const queueCache = new Map();
 
 function createDeadLetterHandler(queueName) {
@@ -33,6 +35,10 @@ function getQueue(name) {
     return queueCache.get(name);
   }
   const q = new Queue(name, config.redisUrl, {
+    settings: {
+      lockDuration: 120000,
+      stalledInterval: 60000,
+    },
     defaultJobOptions: {
       attempts: config.jobMaxAttempts,
       backoff: { type: 'exponential', delay: config.jobBackoffMs },
@@ -42,6 +48,29 @@ function getQueue(name) {
   });
   q.on('error', (err) => {
     logger.error(`Redis/Bull queue error [${name}]`, { err: err.message });
+  });
+  q.on('active', (job) => {
+    if (job && !job._fcT0) {
+      job._fcT0 = Date.now();
+    }
+  });
+  q.on('completed', (job) => {
+    if (!job) {
+      return;
+    }
+    const t =
+      (job.finishedOn && job.processedOn
+        ? job.finishedOn - job.processedOn
+        : job.finishedOn && job._fcT0
+          ? job.finishedOn - job._fcT0
+          : 0) || 0;
+    if (t > SLOW_MS) {
+      logger.warn('Queue job slow', { queue: name, id: String(job.id), name: job.name, durationMs: t });
+    }
+  });
+  q.on('stalled', (job) => {
+    const id = job && typeof job === 'object' && 'id' in job ? job.id : job;
+    logger.error('Queue job stalled', { queue: name, id: id != null ? String(id) : 'unknown' });
   });
   q.on('failed', createDeadLetterHandler(name));
   queueCache.set(name, q);

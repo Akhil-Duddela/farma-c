@@ -2,6 +2,8 @@ const User = require('../models/User');
 const authService = require('../services/authService');
 const verificationService = require('../services/verificationService');
 const logger = require('../utils/logger');
+const fraudDetectionService = require('../services/fraudDetectionService');
+const badgeService = require('../services/badgeService');
 
 function userVerificationDto(user) {
   const u = user.toObject ? user.toObject() : user;
@@ -37,6 +39,10 @@ function userPublic(u) {
 async function register(req, res, next) {
   try {
     const user = await authService.register(req.body);
+    const ip = fraudDetectionService.clientIp(req);
+    if (ip) {
+      void fraudDetectionService.recordAuthContext(user._id, ip);
+    }
     res.status(201).json({
       id: user._id,
       email: user.email,
@@ -55,6 +61,7 @@ async function login(req, res, next) {
       email: req.body.email,
       password: req.body.password,
     });
+    await fraudDetectionService.onLogin(user._id, fraudDetectionService.clientIp(req));
     res.json({
       token,
       user: userPublic(user),
@@ -113,6 +120,7 @@ async function sendOtp(req, res, next) {
   try {
     const { phoneNumber } = req.body;
     const r = await verificationService.sendOtpForUser(req.user._id, phoneNumber);
+    await fraudDetectionService.onOtpRequested(req.user._id, req);
     res.json({ ok: true, sent: r.sent, phoneMasked: r.phoneMasked, expiresIn: r.expiresIn });
   } catch (e) {
     if (e.status) {

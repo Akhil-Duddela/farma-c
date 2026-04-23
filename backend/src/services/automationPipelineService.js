@@ -5,6 +5,7 @@ const s3Service = require('./s3Service');
 const postService = require('./postService');
 const { recomputeAggregatedStatus } = require('./postStatusService');
 const logService = require('./logService');
+const creatorStatsService = require('./creatorStatsService');
 const { getAIGenerationQueue, getVideoGenerationQueue } = require('../queues');
 const logger = require('../utils/logger');
 
@@ -229,6 +230,7 @@ async function processVideoJob(job) {
     await post.save();
     throw e;
   }
+  await creatorStatsService.onFirstNonDraftPost(post);
   post.pipelineStatus = 'publishing';
   post.markModified('pipelineStatus');
   post.markModified('automation');

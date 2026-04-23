@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PostService, Post } from '../../core/services/post.service';
 import { AuthService } from '../../core/services/auth.service';
+import { CreatorBadgesComponent } from '../../components/creator-badges/creator-badges.component';
 
 @Component({
   selector: 'app-post-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, DatePipe],
+  imports: [CommonModule, RouterLink, FormsModule, DatePipe, CreatorBadgesComponent],
   templateUrl: './post-list.component.html',
   styleUrl: './post-list.component.scss',
 })

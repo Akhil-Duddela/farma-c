@@ -1,4 +1,5 @@
 const Post = require('../models/Post');
+const User = require('../models/User');
 const config = require('../config');
 const { v4: uuidv4 } = require('uuid');
 const { platformJobId } = require('../utils/idempotency');
@@ -6,8 +7,11 @@ const { getInstagramQueue, getYoutubeQueue } = require('../queues');
 const { parsePlatformFlags, assertInstagramAccount, assertYouTubeAccount } = require('../utils/postPayload');
 const { recomputeAggregatedStatus } = require('./postStatusService');
 const logService = require('./logService');
+const logger = require('../utils/logger');
 const InstagramAccount = require('../models/InstagramAccount');
 const YouTubeAccount = require('../models/YouTubeAccount');
+const fraudDetectionService = require('./fraudDetectionService');
+const creatorStatsService = require('./creatorStatsService');
 
 const VIDEO = new Set(['video', 'reel']);
 
@@ -27,14 +31,25 @@ function normalizeCreateBody(body, userId) {
   return { content, caption, mediaUrl, mediaUrls, userId, raw: body };
 }
 
-async function createPost(userId, body) {
+/**
+ * @param {import('mongoose').Types.ObjectId} userId
+ * @param {object} body
+ * @param {{ req?: import('express').Request }} [ctx]
+ */
+async function createPost(userId, body, ctx = {}) {
   if (body.status === 'scheduled' && !body.scheduledAt) {
     const err = new Error('scheduledAt is required for scheduled posts');
     err.status = 400;
     throw err;
   }
 
+  const u = await User.findById(userId);
+  fraudDetectionService.assertUserMayPost(u);
+  await fraudDetectionService.onPostAttempt(userId, ctx.req);
+
   const n = normalizeCreateBody(body, userId);
+  const combined = `${(n.caption || '').trim()}\n${(n.content || '').trim()}`;
+  const contentHash = await fraudDetectionService.assertContentNotSpammy(userId, combined, body.contentHash, null);
   const flags = parsePlatformFlags(body);
   if (!flags.instagram && !flags.youtube) {
     const err = new Error('At least one platform (Instagram or YouTube) must be enabled');
@@ -93,7 +108,7 @@ async function createPost(userId, body) {
     mediaUrls: n.mediaUrls,
     mediaType: body.mediaType || 'image',
     aspectRatio: body.aspectRatio || '1:1',
-    contentHash: body.contentHash || '',
+    contentHash,
     platforms,
     status: body.status || 'draft',
     scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null,
@@ -102,6 +117,8 @@ async function createPost(userId, body) {
   });
 
   recomputeAggregatedStatus(post);
+  await creatorStatsService.onFirstNonDraftPost(post);
+  await creatorStatsService.applyTerminalIfNeeded(post);
   await post.save();
 
   if (post.status === 'scheduled' && post.scheduledAt) {
@@ -221,21 +238,22 @@ async function createAutomationPost(userId, opts) {
  * V2: maps POST /posts/create { content, mediaUrl, platforms: { instagram, youtube } }
  * into internal create.
  */
-async function createPostV2(userId, body) {
+async function createPostV2(userId, body, ctx = {}) {
   const b = { ...body };
   if (body.caption == null && body.content != null) b.caption = body.content;
   if (Array.isArray(body.mediaUrls) && !body.mediaUrl) b.mediaUrl = body.mediaUrls[0];
   if (body.mediaUrl) b.mediaUrls = [body.mediaUrl];
-  return createPost(userId, b);
+  return createPost(userId, b, ctx);
 }
 
-async function updatePost(userId, id, body) {
+async function updatePost(userId, id, body, ctx = {}) {
   const post = await Post.findOne({ _id: id, userId });
   if (!post) {
     const err = new Error('Post not found');
     err.status = 404;
     throw err;
   }
+  const wasDraft = String(post.status) === 'draft';
   if (body.status === 'scheduled' && !body.scheduledAt && !post.scheduledAt) {
     const err = new Error('scheduledAt is required for scheduled posts');
     err.status = 400;
@@ -300,7 +318,31 @@ async function updatePost(userId, id, body) {
     const a = await assertYouTubeAccount(body.youtubeAccountId, userId);
     post.youtubeAccountId = a._id;
   }
+  if (body.contentHash !== undefined || body.caption !== undefined || body.content !== undefined) {
+    const c = (post.caption || '').trim();
+    const x = (post.content || '').trim();
+    const combined = `${(body.caption != null ? String(body.caption) : c).trim()}\n${(body.content != null ? String(body.content) : x).trim()}`;
+    if (combined.trim().length > 0) {
+      const user = await User.findById(userId);
+      fraudDetectionService.assertUserMayPost(user);
+      await fraudDetectionService.onPostAttempt(userId, ctx.req);
+      post.contentHash = await fraudDetectionService.assertContentNotSpammy(
+        userId,
+        combined,
+        post.contentHash,
+        post._id
+      );
+    }
+  }
+
   recomputeAggregatedStatus(post);
+  if (wasDraft && String(post.status) !== 'draft') {
+    const user = await User.findById(userId);
+    fraudDetectionService.assertUserMayPost(user);
+    await fraudDetectionService.onPostAttempt(userId, ctx.req);
+  }
+  await creatorStatsService.onFirstNonDraftPost(post);
+  await creatorStatsService.applyTerminalIfNeeded(post);
   await post.save();
 
   if (post.status === 'scheduled' && post.scheduledAt) {
@@ -354,7 +396,7 @@ async function listPosts(userId, query = {}) {
     .populate('youtubeAccountId', 'channelTitle channelId');
 }
 
-async function bulkCreateScheduled(userId, postsPayload) {
+async function bulkCreateScheduled(userId, postsPayload, ctx = {}) {
   if (!Array.isArray(postsPayload) || postsPayload.length > config.maxBulkPosts) {
     const err = new Error(`Bulk limit is ${config.maxBulkPosts}`);
     err.status = 400;
@@ -362,7 +404,7 @@ async function bulkCreateScheduled(userId, postsPayload) {
   }
   const created = [];
   for (const p of postsPayload) {
-    created.push(await createPost(userId, { ...p, status: 'scheduled' }));
+    created.push(await createPost(userId, { ...p, status: 'scheduled' }, ctx));
   }
   return created;
 }
@@ -400,35 +442,51 @@ async function schedulePlatformJobs(post) {
     post.platforms.instagram.status = 'queued';
     const jid = platformJobId(pid, 'instagram', sid);
     post.platforms.instagram.jobId = jid;
-    await getInstagramQueue().add(
-      'publish',
-      { postId: pid, platform: 'instagram', userId: u },
-      {
-        jobId: jid,
-        delay,
-        attempts: config.jobMaxAttempts,
-        backoff: { type: 'exponential', delay: config.jobBackoffMs },
-        removeOnComplete: 200,
-        removeOnFail: false,
+    try {
+      await getInstagramQueue().add(
+        'publish',
+        { postId: pid, platform: 'instagram', userId: u },
+        {
+          jobId: jid,
+          delay,
+          attempts: config.jobMaxAttempts,
+          backoff: { type: 'exponential', delay: config.jobBackoffMs },
+          removeOnComplete: 200,
+          removeOnFail: false,
+        }
+      );
+    } catch (e) {
+      if (String(e.message).includes('already') || String(e.message).includes('exists')) {
+        logger.info('Instagram job already queued', { postId: pid, jobId: jid });
+      } else {
+        throw e;
       }
-    );
+    }
   }
   if (post.platforms?.youtube?.enabled) {
     post.platforms.youtube.status = 'queued';
     const yid = platformJobId(pid, 'youtube', sid);
     post.platforms.youtube.jobId = yid;
-    await getYoutubeQueue().add(
-      'publish',
-      { postId: pid, platform: 'youtube', userId: u },
-      {
-        jobId: yid,
-        delay,
-        attempts: config.jobMaxAttempts,
-        backoff: { type: 'exponential', delay: config.jobBackoffMs },
-        removeOnComplete: 200,
-        removeOnFail: false,
+    try {
+      await getYoutubeQueue().add(
+        'publish',
+        { postId: pid, platform: 'youtube', userId: u },
+        {
+          jobId: yid,
+          delay,
+          attempts: config.jobMaxAttempts,
+          backoff: { type: 'exponential', delay: config.jobBackoffMs },
+          removeOnComplete: 200,
+          removeOnFail: false,
+        }
+      );
+    } catch (e) {
+      if (String(e.message).includes('already') || String(e.message).includes('exists')) {
+        logger.info('YouTube job already queued', { postId: pid, jobId: yid });
+      } else {
+        throw e;
       }
-    );
+    }
   }
   recomputeAggregatedStatus(post);
   post.lastJobId = `${post.platforms?.instagram?.jobId || ''}|${post.platforms?.youtube?.jobId || ''}`;

@@ -10,6 +10,9 @@ import { PostService } from '../../core/services/post.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
+import { CreatorBadgesComponent } from '../../components/creator-badges/creator-badges.component';
+import { RecommendationService, Recommendations } from '../../core/services/recommendation.service';
+import { creatorLevelLabel } from '../../core/badge-labels';
 
 function mapOauthReason(raw: string | null | undefined): string {
   if (!raw) {
@@ -49,6 +52,7 @@ function mapOauthReason(raw: string | null | undefined): string {
     AccountsCardComponent,
     LogsErrorPanelComponent,
     AutomationPipelineComponent,
+    CreatorBadgesComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -56,7 +60,12 @@ function mapOauthReason(raw: string | null | undefined): string {
 export class DashboardComponent implements OnInit {
   private readonly posts = inject(PostService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly recommendations = inject(RecommendationService);
   readonly auth = inject(AuthService);
+  recs: Recommendations | null = null;
+  recsLoading = true;
+  recsError = '';
+  levelLabel = creatorLevelLabel;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -72,6 +81,16 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.analytics.summary().subscribe((s) => (this.summary = s));
+    this.recommendations.get().subscribe({
+      next: (d) => {
+        this.recs = d;
+        this.recsLoading = false;
+      },
+      error: () => {
+        this.recsError = 'Could not load recommendations. Try again later.';
+        this.recsLoading = false;
+      },
+    });
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((q) => {
       this.handleAccountQueryParams(q);
     });

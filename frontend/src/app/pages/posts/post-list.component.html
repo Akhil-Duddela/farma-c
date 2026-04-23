@@ -3,8 +3,9 @@
     <div class="min-w-0">
       <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
         <h1 class="mb-0">Posts</h1>
-        @if (auth.showVerifiedCreatorBadge()) {
-          <span class="badge text-bg-info text-dark">Verified Creator</span>
+        <app-creator-badges [ids]="auth.user()?.badges || []" [compact]="true" />
+        @if (auth.showVerifiedCreatorBadge() && !auth.user()?.badges?.includes('verified_creator')) {
+          <span class="badge text-bg-info text-dark">Verified</span>
         }
       </div>
       <p class="muted mb-0">All posts (use Dashboard for create &amp; status)</p>

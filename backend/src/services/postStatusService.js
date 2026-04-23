@@ -1,4 +1,5 @@
 const { logPlatform } = require('./logService');
+const creatorStatsService = require('./creatorStatsService');
 
 /**
  * When the automation pipeline is at publish, mirror aggregate `post.status` to `pipelineStatus`.
@@ -102,6 +103,8 @@ async function markPlatformResult(post, platform, status, error = '', userId) {
   }
   post.markModified('platforms');
   recomputeAggregatedStatus(post);
+  await creatorStatsService.onFirstNonDraftPost(post);
+  await creatorStatsService.applyTerminalIfNeeded(post);
   await post.save();
   await logPlatform({ postId: post._id, userId, platform, status, error });
 }

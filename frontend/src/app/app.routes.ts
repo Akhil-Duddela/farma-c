@@ -16,6 +16,7 @@ import { AiEnhancerComponent } from './components/ai-enhancer/ai-enhancer.compon
 import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
 import { VerificationComponent } from './pages/verification/verification.component';
 import { AdminVerificationsComponent } from './pages/admin/admin-verifications.component';
+import { LeaderboardComponent } from './pages/leaderboard/leaderboard.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -35,6 +36,7 @@ export const routes: Routes = [
       { path: 'logs', component: LogsComponent },
       { path: 'settings', component: SettingsComponent },
       { path: 'analytics', component: AnalyticsComponent },
+      { path: 'leaderboard', component: LeaderboardComponent },
       { path: 'youtube/oauth-result', component: YoutubeOauthResultComponent },
       { path: 'ai', component: AiEnhancerComponent },
       { path: 'verification', component: VerificationComponent },

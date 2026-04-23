@@ -2,33 +2,101 @@
   <div class="page-header">
     <div>
       <h1>Analytics</h1>
-      <p class="muted mb-0">Aggregated metrics from synced Instagram insights</p>
+      <p class="muted mb-0">Reach, success rates, platform health, and activity trends</p>
     </div>
   </div>
-
+  @if (err) {
+    <div class="alert alert-danger small">{{ err }}</div>
+  }
   <div class="row g-3 g-md-4 stats-row">
-    <div class="col-12 col-sm-6 col-lg-4">
+    <div class="col-6 col-sm-4 col-lg-2">
       <div class="card stat h-100">
-        <div class="label">Likes (engagement)</div>
+        <div class="label">Likes (synced)</div>
         <div class="value">{{ data.totals?.likes ?? 0 }}</div>
       </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-4">
+    <div class="col-6 col-sm-4 col-lg-2">
       <div class="card stat h-100">
         <div class="label">Reach</div>
         <div class="value">{{ data.totals?.reach ?? 0 }}</div>
       </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-4">
+    <div class="col-6 col-sm-4 col-lg-2">
       <div class="card stat h-100">
-        <div class="label">Impressions</div>
+        <div class="label">Impr.</div>
         <div class="value">{{ data.totals?.impressions ?? 0 }}</div>
       </div>
     </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card stat h-100">
+        <div class="label">Success %</div>
+        <div class="value">
+          {{ (data.rates?.successRatePercent ?? 0) | number: '1.0-0' }}<span class="fs-6">%</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card stat h-100">
+        <div class="label">AI uses</div>
+        <div class="value">{{ data.creator?.aiUsageCount ?? 0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card stat h-100">
+        <div class="label">Eng. score</div>
+        <div class="value">{{ (data.creator?.engagementScore ?? 0) | number: '1.0-0' }}</div>
+      </div>
+    </div>
   </div>
-
-  <section class="card pad mt-2">
-    <h2 class="h4">Recent published posts</h2>
+  <div class="row g-3 mt-1">
+    <div class="col-12 col-md-6">
+      <div class="card pad h-100">
+        <h2 class="h4">Per-platform outcomes</h2>
+        <p class="small muted">Published vs failed (per platform state, all-time)</p>
+        <ul class="list-unstyled small mb-0">
+          <li>Instagram: posted <strong>{{ data.platforms?.instagram?.posted ?? 0 }}</strong>, failed <strong class="text-danger-emphasis">{{ data.platforms?.instagram?.failed ?? 0 }}</strong></li>
+          <li>YouTube: posted <strong>{{ data.platforms?.youtube?.posted ?? 0 }}</strong>, failed <strong class="text-danger-emphasis">{{ data.platforms?.youtube?.failed ?? 0 }}</strong></li>
+        </ul>
+        <p class="small text-muted mt-2 mb-0">Creator: {{ data.creator?.successfulPosts }} ok / {{ data.creator?.failedPosts }} fail ({{ data.creator?.totalPostAttempts }} attempts sent)</p>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="card pad h-100">
+        <h2 class="h4">Activity ({{ data.activity?.windowDays }}d)</h2>
+        <p class="small muted">Posted vs issues by UTC day (partial counts as both)</p>
+        @if (data.activity?.weekly?.length) {
+          <div class="stack">
+            @for (row of data.activity!.weekly; track row.day) {
+              <div class="d-flex align-items-stretch gap-1 py-1 border-bottom">
+                <div class="text-muted" style="width: 6.5rem; font-size: 0.75rem">
+                  {{ row.day }}
+                </div>
+                <div class="flex-grow-1">
+                  <div
+                    class="tbar ok"
+                    [style.width.%]="((row.posted / maxWeekPosted) * 100) || 0"
+                    [attr.title]="'Posted ' + row.posted"
+                  ></div>
+                </div>
+                <div class="flex-grow-1">
+                  <div
+                    class="tbar bad"
+                    [style.width.%]="((row.failed / maxWeekFailed) * 100) || 0"
+                    [attr.title]="'Failed/partial ' + row.failed"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="muted small mb-0">No final outcomes in the window — keep publishing.</p>
+        }
+        <p class="small text-muted mt-2 mb-0">Green: posted, red: failed/partial. Relative scale per day.</p>
+      </div>
+    </div>
+  </div>
+  <section class="card pad mt-3">
+    <h2 class="h4">Recent published (synced)</h2>
     @if (data.recent?.length) {
       <ul class="list-recent text-break">
         @for (p of data.recent || []; track p._id) {
@@ -39,7 +107,7 @@
         }
       </ul>
     } @else {
-      <p class="muted">Publish content and sync insights from the API to populate analytics.</p>
+      <p class="muted">Publish and sync from Instagram to populate metrics (YouTube may differ).</p>
     }
   </section>
 </div>

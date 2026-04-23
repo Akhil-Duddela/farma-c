@@ -3,11 +3,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SettingsService } from '../../core/services/settings.service';
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
+import { AuthService } from '../../core/services/auth.service';
+import { CreatorBadgesComponent } from '../../components/creator-badges/creator-badges.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CreatorBadgesComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -15,6 +17,7 @@ export class SettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly settingsApi = inject(SettingsService);
   private readonly ig = inject(InstagramService);
+  readonly auth = inject(AuthService);
 
   accounts: IgAccount[] = [];
   saved = false;

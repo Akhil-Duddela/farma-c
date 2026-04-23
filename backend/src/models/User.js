@@ -47,6 +47,30 @@ const userSchema = new mongoose.Schema(
     /** Last AI/face check score 0–1 */
     verificationScore: { type: Number, default: 0, min: 0, max: 1 },
     verificationNotes: { type: String, default: '' },
+
+    /** Fraud & trust (0 = clean, 100 = critical) */
+    riskScore: { type: Number, default: 0, min: 0, max: 100, index: true },
+    /** When true, posting is blocked until admin clears or user re-verifies (see middleware) */
+    flagged: { type: Boolean, default: false, index: true },
+    lastActiveIp: { type: String, default: '' },
+    /** Optional client-reported device id (e.g. stable hash) */
+    lastDeviceFingerprint: { type: String, default: '' },
+    /**
+     * Platform gamification — maintained by badgeService
+     * verified_creator | top_performer | consistent_poster | new_creator
+     */
+    badges: { type: [{ type: String, trim: true, maxlength: 64 }], default: [] },
+    /** Denormalized for leaderboard & analytics; updated on post/AI events */
+    creatorStats: {
+      totalPostAttempts: { type: Number, default: 0 },
+      successfulPosts: { type: Number, default: 0 },
+      failedPosts: { type: Number, default: 0 },
+      /** Cumulative proxy for reach/likes/engagement */
+      engagementScore: { type: Number, default: 0 },
+      /** POST /api/ai/enhance and related */
+      aiUsageCount: { type: Number, default: 0 },
+      lastPostAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

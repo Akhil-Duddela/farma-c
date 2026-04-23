@@ -29,7 +29,7 @@ async function getOne(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const post = await postService.createPost(req.user._id, req.body);
+    const post = await postService.createPost(req.user._id, req.body, { req });
     res.status(201).json(post);
   } catch (e) {
     next(e);
@@ -41,7 +41,7 @@ async function create(req, res, next) {
  */
 async function createMulti(req, res, next) {
   try {
-    const post = await postService.createPostV2(req.user._id, req.body);
+    const post = await postService.createPostV2(req.user._id, req.body, { req });
     res.status(201).json(post);
   } catch (e) {
     next(e);
@@ -64,7 +64,7 @@ async function retryPlatforms(req, res, next) {
 
 async function update(req, res, next) {
   try {
-    const post = await postService.updatePost(req.user._id, req.params.id, req.body);
+    const post = await postService.updatePost(req.user._id, req.params.id, req.body, { req });
     res.json(post);
   } catch (e) {
     next(e);
@@ -82,7 +82,7 @@ async function remove(req, res, next) {
 
 async function bulk(req, res, next) {
   try {
-    const posts = await postService.bulkCreateScheduled(req.user._id, req.body.posts);
+    const posts = await postService.bulkCreateScheduled(req.user._id, req.body.posts, { req });
     res.status(201).json(posts);
   } catch (e) {
     next(e);
