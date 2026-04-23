@@ -130,7 +130,8 @@ module.exports = {
   otpTtlMin: Math.min(30, Math.max(5, parseInt(process.env.OTP_TTL_MIN || '10', 10) || 10)),
   /** hCaptcha: https://www.hcaptcha.com/ (site key is public, secret server-only) */
   captcha: {
-    hcaptchaSecret: (process.env.HCAPTCHA_SECRET || '').trim(),
+    /** CAPTCHA_SECRET is an alias for HCAPTCHA_SECRET */
+    hcaptchaSecret: (process.env.CAPTCHA_SECRET || process.env.HCAPTCHA_SECRET || '').trim(),
     hcaptchaSiteKey: (process.env.HCAPTCHA_SITE_KEY || '').trim(),
     /** If true, when hCaptcha API is unreachable, allow the request (not recommended in production) */
     failOpen: process.env.CAPTCHA_FAIL_OPEN === '1' || process.env.CAPTCHA_FAIL_OPEN === 'true',

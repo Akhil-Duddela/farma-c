@@ -28,8 +28,15 @@ function verifyCaptcha(req, res, next) {
   }
 
   const token = (req.body && (req.body.captchaToken || req.body.hcaptchaResponse)) || '';
-  if (!token || typeof token !== 'string' || token.length < 8) {
-    const e = new Error('Complete the CAPTCHA challenge');
+  if (!token || typeof token !== 'string' || !String(token).trim()) {
+    const e = new Error('Captcha required');
+    e.status = 400;
+    e.code = 'CAPTCHA_REQUIRED';
+    e.details = [];
+    return next(e);
+  }
+  if (token.length < 8) {
+    const e = new Error('Captcha verification failed');
     e.status = 400;
     e.code = 'CAPTCHA_FAILED';
     e.details = [];

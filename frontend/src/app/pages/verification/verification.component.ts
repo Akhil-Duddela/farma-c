@@ -6,13 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileVerificationService, ProfileStatus } from '../../core/services/profile-verification.service';
 import { HcaptchaService } from '../../core/hcaptcha.service';
-
-const OTP_MSG: Record<string, string> = {
-  CAPTCHA_FAILED: 'Complete the security check and try again.',
-  OTP_COOLDOWN: 'Too many attempts. Please try again later.',
-  OTP_RATE_LIMIT: 'Too many code requests. Wait a few minutes.',
-  OTP_REDIS_UNAVAILABLE: 'Verification service is busy. Please try again shortly.',
-};
+import { ERROR_MESSAGES } from '../../core/error-map';
 
 @Component({
   selector: 'app-verification',
@@ -156,7 +150,8 @@ export class VerificationComponent implements OnInit, OnDestroy {
         this.otpHooked = false;
         setTimeout(() => this.hookOtpCaptcha(), 0);
         const code = e.error && e.error['code'];
-        this.error = (code && OTP_MSG[code]) || e.error?.['error'] || e.message || 'Could not send code';
+        this.error =
+          (code && ERROR_MESSAGES[code as string]) || e.error?.['error'] || e.message || 'Could not send code';
       },
     });
   }

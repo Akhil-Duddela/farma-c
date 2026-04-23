@@ -3,6 +3,7 @@ const authService = require('../services/authService');
 const verificationService = require('../services/verificationService');
 const logger = require('../utils/logger');
 const fraudDetectionService = require('../services/fraudDetectionService');
+const { checkOtpLimits } = require('../services/otpLimiterService');
 const badgeService = require('../services/badgeService');
 const { normalizeE164 } = require('../utils/phone');
 
@@ -140,7 +141,7 @@ async function sendOtp(req, res, next) {
         .status(400)
         .json({ error: 'Use E.164 format, e.g. +14155552671', code: 'VALIDATION', details: [] });
     }
-    await fraudDetectionService.assertOtpRequestAllowed({ user, phone: ph, req });
+    await checkOtpLimits({ user, phone: ph, req });
     const r = await verificationService.sendOtpForUser(req.user._id, phoneNumber);
     await fraudDetectionService.onOtpRequested(req.user._id, req);
     res.json({ ok: true, sent: r.sent, phoneMasked: r.phoneMasked, expiresIn: r.expiresIn });

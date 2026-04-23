@@ -5,6 +5,7 @@ import { switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { HcaptchaService } from '../../core/hcaptcha.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ERROR_MESSAGES } from '../../core/error-map';
 
 @Component({
   selector: 'app-register',
@@ -70,14 +71,8 @@ export class RegisterComponent implements AfterViewInit {
           this.captchaToken = '';
           const c = e.error && e.error['code'];
           this.error =
-            (c && MESSAGES[c]) || e.error?.['error'] || e.message || 'Registration failed';
+            (c && ERROR_MESSAGES[c]) || e.error?.['error'] || e.message || 'Registration failed';
         },
       });
   }
 }
-
-const MESSAGES: Record<string, string> = {
-  CAPTCHA_FAILED: 'Security check failed. Try again.',
-  CAPTCHA_NOT_CONFIGURED: 'Server is not configured for sign-up. Contact the administrator.',
-  OTP_RATE_LIMIT: 'Too many requests. Try again later.',
-};
