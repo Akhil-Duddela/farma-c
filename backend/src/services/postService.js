@@ -12,6 +12,7 @@ const InstagramAccount = require('../models/InstagramAccount');
 const YouTubeAccount = require('../models/YouTubeAccount');
 const fraudDetectionService = require('./fraudDetectionService');
 const creatorStatsService = require('./creatorStatsService');
+const { incPostsCreated } = require('../observability/metrics');
 
 const VIDEO = new Set(['video', 'reel']);
 
@@ -131,6 +132,7 @@ async function createPost(userId, body, ctx = {}) {
     step: 'post.create',
     message: `Post created (${post.status}) — IG:${flags.instagram} YT:${flags.youtube}`,
   });
+  incPostsCreated();
   return post;
 }
 
@@ -231,6 +233,7 @@ async function createAutomationPost(userId, opts) {
     step: 'automation.create',
     message: 'Automation pipeline post created (draft) — waiting for AI job',
   });
+  incPostsCreated();
   return post;
 }
 
@@ -455,6 +458,7 @@ async function schedulePlatformJobs(post) {
           removeOnFail: false,
         }
       );
+      logger.info('publish_attempt', { userId: u, postId: pid, platform: 'instagram' });
     } catch (e) {
       if (String(e.message).includes('already') || String(e.message).includes('exists')) {
         logger.info('Instagram job already queued', { postId: pid, jobId: jid });
@@ -480,6 +484,7 @@ async function schedulePlatformJobs(post) {
           removeOnFail: false,
         }
       );
+      logger.info('publish_attempt', { userId: u, postId: pid, platform: 'youtube' });
     } catch (e) {
       if (String(e.message).includes('already') || String(e.message).includes('exists')) {
         logger.info('YouTube job already queued', { postId: pid, jobId: yid });

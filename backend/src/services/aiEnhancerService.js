@@ -2,6 +2,7 @@ const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { withRetry } = require('../utils/retry');
+const { incAi } = require('../observability/metrics');
 
 const VIRAL_PROMPT = `You are an expert agricultural and social media content strategist for short-form video (Instagram Reels, YouTube Shorts). Turn the user's raw idea into authentic, high-engagement, shareable content. Keep tone warm, clear, and practical (farming, poultry, organic, desi when relevant).
 
@@ -342,6 +343,9 @@ async function enhanceContent(input, ctx) {
   const prompt = VIRAL_PROMPT.replace(/\{USER_INPUT\}/g, idea);
   try {
     const { result, meta: m } = await resolveByProvider(idea, prompt, ctx || {});
+    const src = m && m.source;
+    const degraded = !!(m && m.degraded);
+    incAi({ source: String(src || 'unknown'), fallback: degraded });
     return { ...result, _meta: m };
   } catch (err) {
     logger.error('[aiEnhancer] unexpected failure, returning static fallback', {
@@ -349,6 +353,7 @@ async function enhanceContent(input, ctx) {
       stack: err.stack,
       requestId: ctx?.requestId,
     });
+    incAi({ source: 'fallback', fallback: true });
     return {
       ...normalizeShape(fallbackAI(idea)),
       _meta: meta(ctx, 'fallback', true, { reason: err.message || 'unexpected' }),

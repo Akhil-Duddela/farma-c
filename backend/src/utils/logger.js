@@ -1,12 +1,23 @@
 const winston = require('winston');
 const config = require('../config');
 const { redactForLog } = require('./safeLog');
+const { getRequestContext } = require('../observability/requestContext');
 
 const { combine, timestamp, json, printf, colorize } = winston.format;
 
 const devFormat = printf(({ level, message, timestamp: ts, ...meta }) => {
   const rest = Object.keys(meta).length ? JSON.stringify(config.env === 'production' ? redactForLog(meta) : meta) : '';
   return `${ts} [${level}] ${message} ${rest}`;
+});
+
+/** Injects requestId from AsyncLocalStorage when present (sync middleware only). */
+const injectRequestContext = winston.format((info) => {
+  const c = getRequestContext();
+  if (c && c.requestId && !info.requestId) {
+    // eslint-disable-next-line no-param-reassign
+    info.requestId = c.requestId;
+  }
+  return info;
 });
 
 const redactInfo = winston.format((info) => {
@@ -31,7 +42,7 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format:
         config.env === 'production'
-          ? combine(timestamp(), redactInfo, json())
+          ? combine(timestamp(), injectRequestContext, redactInfo, json())
           : combine(colorize(), timestamp(), devFormat),
     }),
   ],

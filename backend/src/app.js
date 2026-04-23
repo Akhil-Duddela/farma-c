@@ -4,9 +4,20 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const config = require('./config');
+let Sentry = null;
+try {
+  if ((process.env.SENTRY_DSN || '').trim()) {
+    Sentry = require('@sentry/node');
+  }
+} catch (e) {
+  // eslint-disable-next-line no-console
+  console.error('[app] @sentry/node load failed', e && e.message);
+}
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { requestIdMiddleware } = require('./middleware/requestId');
+const { metricsHttpMiddleware } = require('./middleware/metricsHttpMiddleware');
 const { requireHttps } = require('./middleware/requireHttps');
+const metricsRoutes = require('./routes/metrics');
 const { connectState } = require('./config/healthState');
 
 const healthApiRoutes = require('./routes/health');
@@ -99,7 +110,13 @@ app.get('/health/ready', (req, res) => {
   });
 });
 
-/** Unauthenticated: ops / load balancers */
+/**
+ * Prometheus metrics (set METRICS_BEARER in production; scrape from private network or VPN).
+ * Not under /api so standard Prometheus k8s annotations work.
+ */
+app.use('/metrics', limiterDefault, metricsRoutes);
+
+/** Unauthenticated: ops / load balancers (Render, UptimeRobot) */
 app.use('/api/health', limiterDefault, healthApiRoutes);
 
 app.use('/api/ai', limiterAI, aiRoutes);
@@ -118,6 +135,14 @@ app.use('/api/automation', limiterDefault, automationRoutes);
 app.use('/api/admin', limiterDefault, adminRoutes);
 
 app.use(notFound);
+if (Sentry && typeof Sentry.setupExpressErrorHandler === 'function') {
+  try {
+    Sentry.setupExpressErrorHandler(app);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[app] Sentry setupExpressErrorHandler failed', e && e.message);
+  }
+}
 app.use(errorHandler);
 
 module.exports = app;

@@ -4,6 +4,7 @@ const { getRedis } = require('../config/redisClient');
 const User = require('../models/User');
 const Post = require('../models/Post');
 const logger = require('../utils/logger');
+const { incOtpRequest, incOtpBlocked } = require('../observability/metrics');
 
 const OTP_10M = 10 * 60; // sec
 const OTP_1H = 3600;
@@ -150,6 +151,7 @@ async function assertOtpRequestAllowed({ user, phone, req }) {
   }
   const u = user;
   if (u.otpBlockedUntil && new Date(u.otpBlockedUntil) > new Date()) {
+    incOtpBlocked('cooldown');
     const e = new Error('Too many attempts. Please try again later.');
     e.status = 429;
     e.code = 'OTP_COOLDOWN';
@@ -162,6 +164,7 @@ async function assertOtpRequestAllowed({ user, phone, req }) {
   if (typeof u.riskScore === 'number' && u.riskScore > riskTh) {
     u.otpBlockedUntil = new Date(Date.now() + hBlock * 3600 * 1000);
     await u.save();
+    incOtpBlocked('high_risk');
     const e = new Error('Too many attempts. Please try again later.');
     e.status = 429;
     e.code = 'OTP_COOLDOWN';
@@ -208,6 +211,7 @@ async function assertOtpRequestAllowed({ user, phone, req }) {
         if (u.riskScore >= 70) u.flagged = true;
         await u.save();
         logger.warn('Fraud: OTP rate limit', { userId: uid, dim: d.k, n, max: d.m });
+        incOtpBlocked('rate_window');
         const err = new Error('Too many attempts. Please try again later.');
         err.status = 429;
         err.code = 'OTP_RATE_LIMIT';
@@ -215,6 +219,7 @@ async function assertOtpRequestAllowed({ user, phone, req }) {
         throw err;
       }
     }
+    incOtpRequest();
   } catch (e) {
     if (e.status) throw e;
     logger.error('Fraud: assertOtpRequestAllowed', { err: e.message });

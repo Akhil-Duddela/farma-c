@@ -1,0 +1,60 @@
+# Example Prometheus alert rules for Farm-C AI.
+# Add to your Prometheus `rule_files` and set `job` / `instance` labels to match your scrape config.
+# Metric names use the default empty METRICS_PREFIX; if you set METRICS_PREFIX=fc_, prefix all `http_*` and `*_total` names below with `fc_`.
+
+groups:
+  - name: farm-c-api
+    rules:
+      - alert: FarmCHigh5xxErrorRate
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Farm-C error rate > 5% (5m)'
+          description: '5xx share of HTTP requests exceeded 5% for 5 minutes. Check Sentry and backend logs (requestId).'
+
+      - alert: FarmCHealthDegraded
+        expr: health_status_ok == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Farm-C /api/health would report degraded or metrics health gauge is down'
+          description: 'The fc_health_status_ok gauge is 0 for 2m. Verify MongoDB, Redis, and Bull queues. Use GET /api/health and /api/health/deep.'
+
+  - name: farm-c-queues
+    rules:
+      - alert: FarmCQueueFailuresBurst
+        expr: sum(increase(queue_jobs_total{status="failed"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High Bull job failure count (5m)'
+          description: 'More than 10 failed queue jobs in 5 minutes. Inspect dead-letter / DeadLetterJob collection and worker logs.'
+
+  - name: farm-c-otp
+    rules:
+      - alert: FarmCOtpBlockSpike
+        expr: sum(increase(otp_blocked_total[10m])) > 50
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: 'OTP block counter spiked (possible abuse or misconfiguration)'
+          description: 'Tune threshold for your traffic. Check Redis and fraud logs.'
+
+  - name: farm-c-ai
+    rules:
+      - alert: FarmCAiFallbackSpike
+        expr: |
+          sum(increase(ai_fallback_total[10m])) > 30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'AI static fallback used frequently — check Ollama / OpenAI'
+          description: 'Ollama may be down or OpenAI key missing. Confirm OLLAMA_BASE_URL and OPENAI_API_KEY.'

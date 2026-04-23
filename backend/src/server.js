@@ -1,4 +1,9 @@
 require('dotenv').config();
+/**
+ * Sentry APM: must load before app (which loads express) when SENTRY_DSN is set.
+ * Fails open if Sentry throws.
+ */
+require('./instrument');
 const { assertProductionConfig } = require('./config/assertProductionConfig');
 const app = require('./app');
 const config = require('./config');

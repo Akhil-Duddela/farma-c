@@ -2,8 +2,14 @@ const Queue = require('bull');
 const config = require('../config');
 const DeadLetterJob = require('../models/DeadLetterJob');
 const logger = require('../utils/logger');
+const { incQueueJob, incPublishOutcome } = require('../observability/metrics');
 
 const SLOW_MS = Math.max(10000, parseInt(process.env.SLOW_JOB_LOG_MS || '120000', 10) || 120000);
+
+const QUEUE_IG = 'instagram-publish';
+const QUEUE_YT = 'youtube-publish';
+const QUEUE_AI = 'ai-generation';
+const QUEUE_VID = 'video-generation';
 
 const queueCache = new Map();
 
@@ -67,20 +73,39 @@ function getQueue(name) {
     if (t > SLOW_MS) {
       logger.warn('Queue job slow', { queue: name, id: String(job.id), name: job.name, durationMs: t });
     }
+    const sec = t > 0 ? t / 1000 : 0;
+    const jn = (job && job.name) || 'default';
+    incQueueJob({ queue: name, status: 'completed', name: jn, durationSec: sec });
+    if (jn === 'publish' && (name === QUEUE_IG || name === QUEUE_YT)) {
+      const pl = job.data && job.data.platform;
+      if (pl === 'youtube' || name === QUEUE_YT) {
+        incPublishOutcome('youtube', true);
+      } else {
+        incPublishOutcome('instagram', true);
+      }
+    }
   });
   q.on('stalled', (job) => {
     const id = job && typeof job === 'object' && 'id' in job ? job.id : job;
     logger.error('Queue job stalled', { queue: name, id: id != null ? String(id) : 'unknown' });
   });
-  q.on('failed', createDeadLetterHandler(name));
+  const deadLetter = createDeadLetterHandler(name);
+  q.on('failed', deadLetter);
+  q.on('failed', (job, err) => {
+    const jn = job && job.name;
+    incQueueJob({ queue: name, status: 'failed', name: jn || 'default' });
+    if (jn === 'publish' && (name === QUEUE_IG || name === QUEUE_YT)) {
+      const pl = job && job.data && job.data.platform;
+      if (pl === 'youtube' || name === QUEUE_YT) {
+        incPublishOutcome('youtube', false);
+      } else {
+        incPublishOutcome('instagram', false);
+      }
+    }
+  });
   queueCache.set(name, q);
   return q;
 }
-
-const QUEUE_IG = 'instagram-publish';
-const QUEUE_YT = 'youtube-publish';
-const QUEUE_AI = 'ai-generation';
-const QUEUE_VID = 'video-generation';
 
 function getInstagramQueue() {
   return getQueue(QUEUE_IG);

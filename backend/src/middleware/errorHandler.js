@@ -1,5 +1,15 @@
 const logger = require('../utils/logger');
 
+let Sentry;
+try {
+  if ((process.env.SENTRY_DSN || '').trim()) {
+    // eslint-disable-next-line global-require
+    Sentry = require('@sentry/node');
+  }
+} catch (e) {
+  Sentry = null;
+}
+
 function notFound(req, res) {
   const b = { error: 'Not found', code: 'NOT_FOUND', details: [], path: req.path };
   if (req.id) b.requestId = req.id;
@@ -25,9 +35,16 @@ function errorHandler(err, req, res, next) {
   }
   if (status >= 500) {
     if (isProd) {
-      logger.error('Unhandled error', { err: message, requestId: req.id });
+      logger.error('Unhandled error', { err: message, requestId: req.id, code: err.code });
     } else {
-      logger.error('Unhandled error', { err: message, stack: err.stack });
+      logger.error('Unhandled error', { err: message, stack: err.stack, requestId: req.id, code: err.code });
+    }
+    if (Sentry && Sentry.captureException) {
+      try {
+        Sentry.captureException(err, { extra: { requestId: req.id, path: req.originalUrl, code: err.code } });
+      } catch (e) {
+        /* Sentry down — never block response */
+      }
     }
   }
   const publicMessage = isProd && status >= 500 ? 'The server could not complete this request.' : message;

@@ -26,8 +26,11 @@ async function queueOk(q) {
   }
 }
 
-/** GET /api/health */
-async function apiHealth(req, res) {
+/**
+ * Shared snapshot for /api/health, Prometheus gauge, and probes.
+ * @returns {Promise<{ status: 'ok'|'degraded', allOk: boolean, services: { db: boolean, redis: boolean, queue: boolean }, uptime: number }>}
+ */
+async function computeHealthSnapshot() {
   const db = connectState.mongoose === 1;
   const redis = await checkRedis();
   let qAll = true;
@@ -43,10 +46,22 @@ async function apiHealth(req, res) {
     qAll = false;
   }
   const degraded = !db || !redis;
-  res.json({
-    status: degraded || !qAll ? 'degraded' : 'ok',
+  const status = degraded || !qAll ? 'degraded' : 'ok';
+  return {
+    status,
+    allOk: status === 'ok',
     services: { db, redis, queue: redis && qAll },
     uptime: process.uptime(),
+  };
+}
+
+/** GET /api/health */
+async function apiHealth(req, res) {
+  const snap = await computeHealthSnapshot();
+  res.json({
+    status: snap.status,
+    services: snap.services,
+    uptime: snap.uptime,
   });
 }
 
@@ -96,4 +111,4 @@ async function apiHealthDeep(req, res) {
   });
 }
 
-module.exports = { apiHealth, apiHealthDeep };
+module.exports = { apiHealth, apiHealthDeep, computeHealthSnapshot };

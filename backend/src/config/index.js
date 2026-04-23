@@ -142,4 +142,9 @@ module.exports = {
     riskBlockThreshold: Math.min(100, Math.max(0, parseInt(process.env.OTP_RISK_BLOCK_THRESHOLD || '50', 10) || 50)),
     blockHours: Math.min(72, Math.max(1, parseInt(process.env.OTP_BLOCK_HOURS || '24', 10) || 24)),
   },
+  /** See /monitoring/README.md — Sentry, Prometheus /metrics, optional METRICS_BEARER */
+  observability: {
+    sentryDsn: (process.env.SENTRY_DSN || '').trim(),
+    metricsEnabled: process.env.METRICS_ENABLED !== '0',
+  },
 };
