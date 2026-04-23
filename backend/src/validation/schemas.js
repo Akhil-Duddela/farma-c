@@ -153,6 +153,8 @@ const authRegister = Joi.object({
   email: Joi.string().email().max(320).required(),
   password: Joi.string().min(8).max(128).required(),
   name: Joi.string().max(200).trim().allow('').optional(),
+  /** hCaptcha response */
+  captchaToken: Joi.string().max(4000).allow('').optional(),
 });
 
 const authLogin = Joi.object({
@@ -162,6 +164,7 @@ const authLogin = Joi.object({
 
 const authSendOtp = Joi.object({
   phoneNumber: Joi.string().min(8).max(20).required(),
+  captchaToken: Joi.string().max(4000).allow('').optional(),
 });
 
 const authVerifyOtp = Joi.object({

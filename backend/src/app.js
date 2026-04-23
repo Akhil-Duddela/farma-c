@@ -9,6 +9,7 @@ const { requestIdMiddleware } = require('./middleware/requestId');
 const { requireHttps } = require('./middleware/requireHttps');
 const { connectState } = require('./config/healthState');
 
+const healthApiRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
 const instagramRoutes = require('./routes/instagram');
@@ -97,6 +98,9 @@ app.get('/health/ready', (req, res) => {
     db: connectState.mongoose === 2 ? 'connecting' : 'disconnected',
   });
 });
+
+/** Unauthenticated: ops / load balancers */
+app.use('/api/health', limiterDefault, healthApiRoutes);
 
 app.use('/api/ai', limiterAI, aiRoutes);
 app.use('/api/users', limiterDefault, userPlatformRoutes);

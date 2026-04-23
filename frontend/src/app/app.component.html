@@ -1,1 +1,17 @@
+@if (toast.text()) {
+  <div
+    class="position-fixed top-0 start-50 translate-middle-x mt-2 p-2"
+    style="z-index: 2000; max-width: min(90vw, 32rem); width: 100%"
+  >
+    <div
+      class="alert shadow-sm mb-0 small d-flex align-items-center justify-content-between gap-2"
+      [class.alert-danger]="toast.kind() === 'danger'"
+      [class.alert-info]="toast.kind() === 'info'"
+      role="status"
+    >
+      <span>{{ toast.text() }}</span>
+      <button type="button" class="btn-close btn-sm" (click)="toast.clear()" aria-label="Dismiss"></button>
+    </div>
+  </div>
+}
 <router-outlet />

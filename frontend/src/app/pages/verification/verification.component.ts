@@ -1,9 +1,18 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileVerificationService, ProfileStatus } from '../../core/services/profile-verification.service';
+import { HcaptchaService } from '../../core/hcaptcha.service';
+
+const OTP_MSG: Record<string, string> = {
+  CAPTCHA_FAILED: 'Complete the security check and try again.',
+  OTP_COOLDOWN: 'Too many attempts. Please try again later.',
+  OTP_RATE_LIMIT: 'Too many code requests. Wait a few minutes.',
+  OTP_REDIS_UNAVAILABLE: 'Verification service is busy. Please try again shortly.',
+};
 
 @Component({
   selector: 'app-verification',
@@ -12,10 +21,16 @@ import { ProfileVerificationService, ProfileStatus } from '../../core/services/p
   templateUrl: './verification.component.html',
   styleUrl: './verification.component.scss',
 })
-export class VerificationComponent implements OnInit {
+export class VerificationComponent implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
   private readonly profile = inject(ProfileVerificationService);
   private readonly fb = inject(FormBuilder);
+  private readonly hcaptcha = inject(HcaptchaService);
+
+  @ViewChild('otpCaptchaBox') otpCaptchaBox?: ElementRef<HTMLDivElement>;
+  private otpCaptchaToken = '';
+  private otpHooked = false;
+  private coolTimer: ReturnType<typeof setInterval> | null = null;
 
   status: ProfileStatus | null = null;
   busy = false;
@@ -33,9 +48,20 @@ export class VerificationComponent implements OnInit {
   stepEmailDone = signal(false);
   stepPhoneDone = signal(false);
   stepProfileDone = signal(false);
+  resendCountdown = signal(0);
+  get otpCaptchaOn(): boolean {
+    return this.hcaptcha.isEnabled();
+  }
 
   ngOnInit(): void {
     this.load();
+  }
+
+  ngOnDestroy(): void {
+    if (this.coolTimer) {
+      clearInterval(this.coolTimer);
+      this.coolTimer = null;
+    }
   }
 
   load(): void {
@@ -49,8 +75,21 @@ export class VerificationComponent implements OnInit {
         );
         this.imageUrl = s.profileImageUrl || null;
         this.auth.refreshUser().subscribe();
+        if (!s.phoneVerified && this.otpCaptchaOn) {
+          setTimeout(() => this.hookOtpCaptcha(), 0);
+        }
       },
       error: () => (this.error = 'Could not load status'),
+    });
+  }
+
+  private hookOtpCaptcha(): void {
+    if (this.otpHooked || !this.otpCaptchaBox?.nativeElement || !this.otpCaptchaOn) {
+      return;
+    }
+    this.otpHooked = true;
+    void this.hcaptcha.mount(this.otpCaptchaBox.nativeElement, (t) => {
+      this.otpCaptchaToken = t || '';
     });
   }
 
@@ -79,18 +118,45 @@ export class VerificationComponent implements OnInit {
     if (!v) {
       return;
     }
+    if (this.otpCaptchaOn && !this.otpCaptchaToken) {
+      this.error = 'Complete the security check (CAPTCHA) first.';
+      return;
+    }
     this.error = '';
     this.success = '';
     this.busy = true;
-    this.auth.sendOtp(v).subscribe({
+    this.auth.sendOtp(v, this.otpCaptchaToken).subscribe({
       next: () => {
         this.busy = false;
         this.otpSent = true;
+        this.hcaptcha.reset();
+        this.otpCaptchaToken = '';
         this.success = 'If SMS is configured, a code was sent. In dev, check server logs if Twilio is off.';
+        this.resendCountdown.set(60);
+        if (this.coolTimer) {
+          clearInterval(this.coolTimer);
+        }
+        this.coolTimer = setInterval(() => {
+          const c = this.resendCountdown();
+          if (c <= 1) {
+            this.resendCountdown.set(0);
+            if (this.coolTimer) {
+              clearInterval(this.coolTimer);
+              this.coolTimer = null;
+            }
+          } else {
+            this.resendCountdown.set(c - 1);
+          }
+        }, 1000);
       },
-      error: (e) => {
+      error: (e: HttpErrorResponse) => {
         this.busy = false;
-        this.error = e.error?.error || 'Could not send code';
+        this.hcaptcha.reset();
+        this.otpCaptchaToken = '';
+        this.otpHooked = false;
+        setTimeout(() => this.hookOtpCaptcha(), 0);
+        const code = e.error && e.error['code'];
+        this.error = (code && OTP_MSG[code]) || e.error?.['error'] || e.message || 'Could not send code';
       },
     });
   }

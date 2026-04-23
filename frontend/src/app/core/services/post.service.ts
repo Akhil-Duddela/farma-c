@@ -140,4 +140,19 @@ export class PostService {
   trendingTags(): Observable<{ tags: string[] }> {
     return this.http.get<{ tags: string[] }>(`${environment.apiUrl}/posts/trending-tags`);
   }
+
+  getPostErrors(id: string): Observable<PostErrorsPayload> {
+    return this.http.get<PostErrorsPayload>(`${environment.apiUrl}/posts/${id}/errors`);
+  }
+}
+
+export interface PostErrorsPayload {
+  postId: string;
+  status: string;
+  failureReason: string;
+  pipelineStatus?: string;
+  lastJobId: string;
+  jobs: { platform: string; error: string }[];
+  history: { at?: string; step?: string; message?: string; requestId?: string }[];
+  automation: { lastError?: string; step?: string };
 }

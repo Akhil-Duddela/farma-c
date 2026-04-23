@@ -13,13 +13,50 @@ async function list(req, res, next) {
   }
 }
 
+async function getPostErrors(req, res, next) {
+  try {
+    const post = await Post.findOne({ _id: req.params.id, userId: req.user._id })
+      .select(
+        'failureReason platforms errorHistory automation lastJobId status pipelineStatus postedAt'
+      )
+      .lean();
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found', code: 'NOT_FOUND', details: [] });
+    }
+    const jobs = [
+      { platform: 'instagram', error: (post.platforms && post.platforms.instagram && post.platforms.instagram.error) || '' },
+      { platform: 'youtube', error: (post.platforms && post.platforms.youtube && post.platforms.youtube.error) || '' },
+    ];
+    return res.json({
+      postId: String(post._id),
+      status: post.status,
+      failureReason: post.failureReason || '',
+      pipelineStatus: post.pipelineStatus,
+      lastJobId: post.lastJobId || '',
+      jobs,
+      history: (post.errorHistory || []).map((e) => ({
+        at: e.at,
+        step: e.step,
+        message: e.message,
+        requestId: e.requestId,
+      })),
+      automation: {
+        lastError: post.automation && post.automation.lastError,
+        step: post.automation && post.automation.step,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
 async function getOne(req, res, next) {
   try {
     const post = await Post.findOne({ _id: req.params.id, userId: req.user._id })
       .populate('instagramAccountId', 'username label igUserId')
       .populate('youtubeAccountId', 'channelId channelTitle');
     if (!post) {
-      return res.status(404).json({ error: 'Post not found' });
+      return res.status(404).json({ error: 'Post not found', code: 'NOT_FOUND', details: [] });
     }
     res.json(post);
   } catch (e) {
@@ -134,6 +171,7 @@ async function trendingTags(req, res, next) {
 
 module.exports = {
   list,
+  getPostErrors,
   getOne,
   create,
   createMulti,

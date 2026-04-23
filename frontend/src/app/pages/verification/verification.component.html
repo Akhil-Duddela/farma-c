@@ -104,13 +104,21 @@
           placeholder="+14155552671"
           formControlName="phone"
         />
+        @if (otpCaptchaOn) {
+          <div class="mb-2 small text-muted">Security check</div>
+          <div #otpCaptchaBox class="mb-2" style="min-height: 78px"></div>
+        }
         <button
           type="button"
           class="btn btn-sm btn-outline-primary me-2"
-          [disabled]="busy || phoneForm.invalid"
+          [disabled]="busy || phoneForm.invalid || resendCountdown() > 0"
           (click)="sendOtp()"
         >
-          Send OTP
+          @if (resendCountdown() > 0) {
+            Resend in {{ resendCountdown() }}s
+          } @else {
+            {{ otpSent ? 'Resend OTP' : 'Send OTP' }}
+          }
         </button>
         @if (otpSent) {
           <div class="mt-3" [formGroup]="otpForm">

@@ -1,8 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { HcaptchaService } from '../../core/hcaptcha.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
@@ -11,10 +13,14 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
-export class RegisterComponent {
+export class RegisterComponent implements AfterViewInit {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly hcaptcha = inject(HcaptchaService);
+
+  @ViewChild('captchaBox') captchaBox?: ElementRef<HTMLDivElement>;
+  private captchaToken = '';
 
   error = '';
   loading = false;
@@ -25,23 +31,53 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
+  get captchaEnabled(): boolean {
+    return this.hcaptcha.isEnabled();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.captchaBox?.nativeElement && this.hcaptcha.isEnabled()) {
+      void this.hcaptcha
+        .mount(this.captchaBox.nativeElement, (t) => {
+          this.captchaToken = t || '';
+        })
+        .catch(() => {
+          this.error = 'Could not load security check. Refresh the page.';
+        });
+    }
+  }
+
   submit(): void {
     if (this.form.invalid) return;
+    if (this.captchaEnabled && !this.captchaToken) {
+      this.error = 'Complete the security check (CAPTCHA) before continuing.';
+      return;
+    }
     this.loading = true;
     this.error = '';
     const { email, password, name } = this.form.getRawValue();
     this.auth
-      .register({ email, password, name })
+      .register({ email, password, name, captchaToken: this.captchaToken })
       .pipe(switchMap(() => this.auth.login(email, password)))
       .subscribe({
         next: () => {
           this.loading = false;
           this.router.navigateByUrl('/dashboard');
         },
-        error: (e) => {
+        error: (e: HttpErrorResponse) => {
           this.loading = false;
-          this.error = e.error?.error || 'Registration failed';
+          this.hcaptcha.reset();
+          this.captchaToken = '';
+          const c = e.error && e.error['code'];
+          this.error =
+            (c && MESSAGES[c]) || e.error?.['error'] || e.message || 'Registration failed';
         },
       });
   }
 }
+
+const MESSAGES: Record<string, string> = {
+  CAPTCHA_FAILED: 'Security check failed. Try again.',
+  CAPTCHA_NOT_CONFIGURED: 'Server is not configured for sign-up. Contact the administrator.',
+  OTP_RATE_LIMIT: 'Too many requests. Try again later.',
+};

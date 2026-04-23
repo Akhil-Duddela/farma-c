@@ -128,4 +128,17 @@ module.exports = {
   /** Minutes */
   emailVerifyTtlMin: Math.min(10080, Math.max(10, parseInt(process.env.EMAIL_VERIFY_TTL_MIN || '10080', 10) || 10080)),
   otpTtlMin: Math.min(30, Math.max(5, parseInt(process.env.OTP_TTL_MIN || '10', 10) || 10)),
+  /** hCaptcha: https://www.hcaptcha.com/ (site key is public, secret server-only) */
+  captcha: {
+    hcaptchaSecret: (process.env.HCAPTCHA_SECRET || '').trim(),
+    hcaptchaSiteKey: (process.env.HCAPTCHA_SITE_KEY || '').trim(),
+    /** If true, when hCaptcha API is unreachable, allow the request (not recommended in production) */
+    failOpen: process.env.CAPTCHA_FAIL_OPEN === '1' || process.env.CAPTCHA_FAIL_OPEN === 'true',
+  },
+  otp: {
+    maxPer10Min: Math.min(20, Math.max(1, parseInt(process.env.OTP_MAX_PER_10M || '3', 10) || 3)),
+    maxPerHour: Math.min(30, Math.max(1, parseInt(process.env.OTP_MAX_PER_HOUR || '5', 10) || 5)),
+    riskBlockThreshold: Math.min(100, Math.max(0, parseInt(process.env.OTP_RISK_BLOCK_THRESHOLD || '50', 10) || 50)),
+    blockHours: Math.min(72, Math.max(1, parseInt(process.env.OTP_BLOCK_HOURS || '24', 10) || 24)),
+  },
 };

@@ -75,7 +75,12 @@ export class AuthService {
       );
   }
 
-  register(body: { email: string; password: string; name?: string }): Observable<{
+  register(body: {
+    email: string;
+    password: string;
+    name?: string;
+    captchaToken?: string;
+  }): Observable<{
     id: string;
     email: string;
     name: string;
@@ -102,7 +107,7 @@ export class AuthService {
     );
   }
 
-  sendOtp(phoneNumber: string): Observable<{
+  sendOtp(phoneNumber: string, captchaToken?: string): Observable<{
     ok: boolean;
     sent: boolean;
     phoneMasked: string;
@@ -113,7 +118,7 @@ export class AuthService {
       sent: boolean;
       phoneMasked: string;
       expiresIn: number;
-    }>(`${environment.apiUrl}/auth/send-otp`, { phoneNumber });
+    }>(`${environment.apiUrl}/auth/send-otp`, { phoneNumber, captchaToken: captchaToken || '' });
   }
 
   verifyOtp(phoneNumber: string, otp: string): Observable<{ ok: boolean; user: User }> {

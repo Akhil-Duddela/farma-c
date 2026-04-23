@@ -20,6 +20,7 @@ router.use(authenticate);
 
 router.get('/', postController.list);
 router.get('/trending-tags', postController.trendingTags);
+router.get('/:id/errors', postController.getPostErrors);
 
 router.post(
   '/create',

@@ -36,6 +36,8 @@ const userSchema = new mongoose.Schema(
     /** Bcrypt hash of 6-digit OTP; plaintext OTP is never stored */
     otpHash: { type: String, default: '' },
     otpExpires: { type: Date, default: null },
+    /** After abuse; OTP send blocked until this time */
+    otpBlockedUntil: { type: Date, default: null, index: true, sparse: true },
 
     profileImageUrl: { type: String, default: '' },
     verificationStatus: {

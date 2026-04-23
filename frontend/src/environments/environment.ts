@@ -1,4 +1,10 @@
-export const environment = {
+export const environment: {
+  production: boolean;
+  apiUrl: string;
+  hcaptchaSiteKey: string;
+} = {
   production: false,
   apiUrl: 'http://localhost:4000/api',
+  /** hCaptcha site key (public) — set in your environment; see https://www.hcaptcha.com/ */
+  hcaptchaSiteKey: '',
 };

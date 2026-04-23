@@ -1,11 +1,12 @@
 const crypto = require('crypto');
+const config = require('../config');
 const { getRedis } = require('../config/redisClient');
 const User = require('../models/User');
 const Post = require('../models/Post');
 const logger = require('../utils/logger');
 
-const OTP_WINDOW_SEC = 3600;
-const MAX_OTP_PER_HOUR = 6;
+const OTP_10M = 10 * 60; // sec
+const OTP_1H = 3600;
 const POST_WINDOW_SEC = 3600;
 const MAX_POSTS_PER_HOUR = 40;
 const MAX_ACCOUNTS_PER_IP = 4;
@@ -91,24 +92,146 @@ async function onLogin(userId, ip) {
 }
 
 /**
+ * @param {import('ioredis').default} r
+ * @param {string} subKey
+ * @param {number} ttlSec
+ * @returns {Promise<number>} new count
+ */
+async function bumpOtp(r, subKey, ttlSec) {
+  const k = `fc:otp:win:${subKey}`;
+  const n = await r.incr(k);
+  if (n === 1) await r.expire(k, ttlSec);
+  return n;
+}
+
+/**
+ * Throttle by IP (registration attempts).
+ * @param {import('express').Request} req
+ */
+async function assertRegisterIpNotAbusive(req) {
+  const ip = clientIp(req);
+  if (!ip) return;
+  const sub = `reg:1h:ip:${ipKey(ip)}`;
+  try {
+    const r = getRedis();
+    await r.ping();
+    const n = await bumpOtp(r, sub, 3600);
+    if (n > 20) {
+      const e = new Error('Too many registration attempts. Try again later.');
+      e.status = 429;
+      e.code = 'OTP_RATE_LIMIT';
+      e.details = [];
+      throw e;
+    }
+  } catch (e) {
+    if (e.status) throw e;
+    if (e.message && /ECONNREFUSED|NOREPLY/i.test(e.message)) {
+      const ex = new Error('Verification service temporarily unavailable.');
+      ex.status = 503;
+      ex.code = 'OTP_REDIS_UNAVAILABLE';
+      ex.details = [];
+      throw ex;
+    }
+    throw e;
+  }
+}
+
+/**
+ * @param {object} o
+ * @param {import('mongoose').Document} o.user
+ * @param {string} o.phone E.164
+ * @param {import('express').Request} o.req
+ */
+async function assertOtpRequestAllowed({ user, phone, req }) {
+  if (!user || !req) {
+    const e = new Error('Bad request');
+    e.status = 400;
+    return Promise.reject(e);
+  }
+  const u = user;
+  if (u.otpBlockedUntil && new Date(u.otpBlockedUntil) > new Date()) {
+    const e = new Error('Too many attempts. Please try again later.');
+    e.status = 429;
+    e.code = 'OTP_COOLDOWN';
+    e.details = [];
+    e.retryAfterSec = Math.ceil((new Date(u.otpBlockedUntil) - Date.now()) / 1000);
+    return Promise.reject(e);
+  }
+  const riskTh = (config.otp && config.otp.riskBlockThreshold) || 50;
+  const hBlock = (config.otp && config.otp.blockHours) || 24;
+  if (typeof u.riskScore === 'number' && u.riskScore > riskTh) {
+    u.otpBlockedUntil = new Date(Date.now() + hBlock * 3600 * 1000);
+    await u.save();
+    const e = new Error('Too many attempts. Please try again later.');
+    e.status = 429;
+    e.code = 'OTP_COOLDOWN';
+    e.details = [{ reason: 'risk_score', riskScore: u.riskScore }];
+    e.retryAfterSec = hBlock * 3600;
+    return Promise.reject(e);
+  }
+
+  const ip = clientIp(req);
+  const ipH = ipKey(ip);
+  const phH = phone ? ipKey(phone) : 'none';
+  const uid = String(u._id);
+  const m10 = (config.otp && config.otp.maxPer10Min) || 3;
+  const m1h = (config.otp && config.otp.maxPerHour) || 5;
+  const dims = [
+    { k: `10m:ip:${ipH}`, t: OTP_10M, m: m10 },
+    { k: `1h:ip:${ipH}`, t: OTP_1H, m: m1h },
+    { k: `10m:uid:${uid}`, t: OTP_10M, m: m10 },
+    { k: `1h:uid:${uid}`, t: OTP_1H, m: m1h },
+    { k: `10m:ph:${phH}`, t: OTP_10M, m: m10 },
+    { k: `1h:ph:${phH}`, t: OTP_1H, m: m1h },
+  ];
+
+  let r;
+  try {
+    r = getRedis();
+    await r.ping();
+  } catch (e) {
+    logger.error('Fraud: Redis down for OTP', { err: e.message });
+    const ex = new Error('SMS verification is temporarily unavailable. Please try again shortly.');
+    ex.status = 503;
+    ex.code = 'OTP_REDIS_UNAVAILABLE';
+    ex.details = [];
+    throw ex;
+  }
+
+  try {
+    for (const d of dims) {
+      const n = await bumpOtp(r, d.k, d.t);
+      if (n > d.m) {
+        u.riskScore = Math.min(100, (u.riskScore || 0) + 18);
+        const h = (config.otp && config.otp.blockHours) || 24;
+        u.otpBlockedUntil = new Date(Date.now() + h * 3600 * 1000);
+        if (u.riskScore >= 70) u.flagged = true;
+        await u.save();
+        logger.warn('Fraud: OTP rate limit', { userId: uid, dim: d.k, n, max: d.m });
+        const err = new Error('Too many attempts. Please try again later.');
+        err.status = 429;
+        err.code = 'OTP_RATE_LIMIT';
+        err.details = [{ key: d.k, count: n }];
+        throw err;
+      }
+    }
+  } catch (e) {
+    if (e.status) throw e;
+    logger.error('Fraud: assertOtpRequestAllowed', { err: e.message });
+    const ex = new Error('Could not complete security checks.');
+    ex.status = 500;
+    ex.code = 'OTP_CHECK_FAILED';
+    throw ex;
+  }
+}
+
+/**
+ * After SMS/OTP is accepted as sent.
  * @param {import('mongoose').Types.ObjectId} userId
  * @param {import('express').Request} [req]
  */
 async function onOtpRequested(userId, req) {
-  const key = `fc:fraud:otp:uid:${userId}`;
   try {
-    const r = getRedis();
-    const n = await r.incr(key);
-    if (n === 1) await r.expire(key, OTP_WINDOW_SEC);
-    if (n > MAX_OTP_PER_HOUR) {
-      const u = await User.findById(userId);
-      if (u) {
-        u.riskScore = Math.min(100, (u.riskScore || 0) + 15);
-        if (u.riskScore >= 70) u.flagged = true;
-        await u.save();
-        logger.warn('Fraud: rapid OTP', { userId, count: n });
-      }
-    }
     if (req) {
       const ip = clientIp(req);
       if (ip) {
@@ -232,6 +355,8 @@ module.exports = {
   deviceFingerprint,
   onLogin,
   onOtpRequested,
+  assertOtpRequestAllowed,
+  assertRegisterIpNotAbusive,
   onPostAttempt,
   assertContentNotSpammy,
   assertUserMayPost,

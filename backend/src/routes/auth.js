@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { validateBody } = require('../middleware/validateJoi');
+const { verifyCaptcha } = require('../middleware/verifyCaptcha');
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { authRegister, authLogin, authSendOtp, authVerifyOtp } = require('../validation/schemas');
@@ -24,7 +25,14 @@ router.post('/register', validateBody(authRegister, { stripScripts: ['name'] }),
 router.post('/login', validateBody(authLogin), authController.login);
 router.get('/me', authenticate, authController.me);
 router.post('/resend-verification', authenticate, authController.resendVerification);
-router.post('/send-otp', authenticate, limiterOtp, validateBody(authSendOtp), authController.sendOtp);
+router.post(
+  '/send-otp',
+  authenticate,
+  verifyCaptcha,
+  limiterOtp,
+  validateBody(authSendOtp),
+  authController.sendOtp
+);
 router.post(
   '/verify-otp',
   authenticate,

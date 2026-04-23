@@ -4,6 +4,7 @@ const verificationService = require('../services/verificationService');
 const logger = require('../utils/logger');
 const fraudDetectionService = require('../services/fraudDetectionService');
 const badgeService = require('../services/badgeService');
+const { normalizeE164 } = require('../utils/phone');
 
 function userVerificationDto(user) {
   const u = user.toObject ? user.toObject() : user;
@@ -24,20 +25,30 @@ function userVerificationDto(user) {
 }
 
 function userPublic(u) {
+  const o = u && u.toObject ? u.toObject() : u;
+  const stats = o.creatorStats || {};
+  const s = stats.successfulPosts || 0;
+  const f = stats.failedPosts || 0;
+  const successRate = s / Math.max(1, s + f);
   return {
-    id: u._id,
-    email: u.email,
-    name: u.name,
-    role: u.role,
-    timezone: u.timezone,
-    dailyAutoPostCount: u.dailyAutoPostCount,
-    dailyAutoPostHourIST: u.dailyAutoPostHourIST,
+    id: o._id,
+    email: o.email,
+    name: o.name,
+    role: o.role,
+    timezone: o.timezone,
+    dailyAutoPostCount: o.dailyAutoPostCount,
+    dailyAutoPostHourIST: o.dailyAutoPostHourIST,
     ...userVerificationDto(u),
+    badges: Array.isArray(o.badges) ? o.badges : [],
+    riskScore: typeof o.riskScore === 'number' ? o.riskScore : 0,
+    flagged: !!o.flagged,
+    creatorLevel: badgeService.getCreatorLevel(o, successRate, s, f),
   };
 }
 
 async function register(req, res, next) {
   try {
+    await fraudDetectionService.assertRegisterIpNotAbusive(req);
     const user = await authService.register(req.body);
     const ip = fraudDetectionService.clientIp(req);
     if (ip) {
@@ -115,16 +126,32 @@ async function resendVerification(req, res, next) {
   }
 }
 
-/** POST /api/auth/send-otp { phoneNumber } */
+/** POST /api/auth/send-otp { phoneNumber, captchaToken } */
 async function sendOtp(req, res, next) {
   try {
     const { phoneNumber } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found', code: 'NOT_FOUND', details: [] });
+    }
+    const ph = normalizeE164(phoneNumber);
+    if (!ph) {
+      return res
+        .status(400)
+        .json({ error: 'Use E.164 format, e.g. +14155552671', code: 'VALIDATION', details: [] });
+    }
+    await fraudDetectionService.assertOtpRequestAllowed({ user, phone: ph, req });
     const r = await verificationService.sendOtpForUser(req.user._id, phoneNumber);
     await fraudDetectionService.onOtpRequested(req.user._id, req);
     res.json({ ok: true, sent: r.sent, phoneMasked: r.phoneMasked, expiresIn: r.expiresIn });
   } catch (e) {
     if (e.status) {
-      return res.status(e.status).json({ error: e.message, code: e.code });
+      return res.status(e.status).json({
+        error: e.message,
+        code: e.code || 'ERROR',
+        details: Array.isArray(e.details) ? e.details : [],
+        ...(e.retryAfterSec != null ? { retryAfterSec: e.retryAfterSec } : {}),
+      });
     }
     next(e);
   }
