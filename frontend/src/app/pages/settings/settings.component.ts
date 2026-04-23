@@ -1,12 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { SettingsService } from '../../core/services/settings.service';
 import { InstagramService, IgAccount } from '../../core/services/instagram.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -26,14 +27,6 @@ export class SettingsComponent implements OnInit {
     dailyAutoPostHourIST: [9, [Validators.min(0), Validators.max(23)]],
   });
 
-  linkForm = this.fb.nonNullable.group({
-    igUserId: ['', Validators.required],
-    accessToken: [''],
-    shortLivedToken: [''],
-    username: [''],
-    pageId: [''],
-  });
-
   ngOnInit(): void {
     this.settingsApi.get().subscribe((s) => this.profile.patchValue(s));
     this.loadIg();
@@ -50,26 +43,6 @@ export class SettingsComponent implements OnInit {
       next: () => (this.saved = true),
       error: (e) => (this.error = e.error?.error || 'Save failed'),
     });
-  }
-
-  linkIg(): void {
-    this.error = '';
-    const v = this.linkForm.getRawValue();
-    this.ig
-      .link({
-        igUserId: v.igUserId,
-        accessToken: v.accessToken || undefined,
-        shortLivedToken: v.shortLivedToken || undefined,
-        username: v.username || undefined,
-        pageId: v.pageId || undefined,
-      })
-      .subscribe({
-        next: () => {
-          this.linkForm.reset();
-          this.loadIg();
-        },
-        error: (e) => (this.error = e.error?.error || 'Link failed'),
-      });
   }
 
   setDefault(id: string): void {

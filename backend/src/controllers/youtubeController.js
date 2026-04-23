@@ -38,7 +38,6 @@ function authUrl(req, res) {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const state = `uid:${req.user._id}`;
     const url = youtubeTokenService.getAuthUrl(state);
-    /** Must match an entry in Google Cloud → OAuth client → Authorized redirect URIs (exact) */
     const redirectUri = config.youtube.redirectUri;
     res.json({ url, state, redirectUri });
   } catch (e) {
@@ -54,9 +53,9 @@ const frontendBase = config.frontendUrl;
  */
 function oauthResultUrl(ok, errMessage) {
   if (ok) {
-    return `${frontendBase}/youtube/oauth-result?ok=1`;
+    return `${frontendBase}/dashboard?yt=connected`;
   }
-  return `${frontendBase}/youtube/oauth-result?error=${encodeURIComponent(errMessage || 'unknown')}`;
+  return `${frontendBase}/dashboard?yt=error&reason=${encodeURIComponent(errMessage || 'unknown')}`;
 }
 
 async function callback(req, res) {
@@ -124,4 +123,15 @@ async function setDefault(req, res, next) {
   }
 }
 
-module.exports = { linkTokens, authUrl, callback, exchangeCode, list, setDefault };
+async function removeAccount(req, res, next) {
+  try {
+    const r = await YouTubeAccount.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+    if (!r) return res.status(404).json({ error: 'Not found' });
+    await logService.logEntry({ userId: req.user._id, step: 'youtube.disconnect', message: 'Account removed' });
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+}
+
+module.exports = { linkTokens, authUrl, callback, exchangeCode, list, setDefault, removeAccount };

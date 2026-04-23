@@ -1,7 +1,7 @@
 <div class="card border-0 shadow-sm mb-4" id="connect-accounts" tabindex="-1">
   <div class="card-header bg-white border-0 py-3">
     <h2 class="h5 mb-0 fw-semibold">Connected accounts</h2>
-    <p class="text-muted small mb-0">Link Instagram and YouTube to enable publishing</p>
+    <p class="text-muted small mb-0">Connect Instagram and YouTube with one click. You can disconnect anytime.</p>
   </div>
   <div class="card-body">
     @if (tokenAlert) {
@@ -17,98 +17,107 @@
       <div class="alert alert-warning small py-2 mb-3">{{ error }}</div>
     }
     <div class="row g-3">
-      <div class="col-md-6">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="fs-4">📷</span>
-          <span class="fw-medium">Instagram</span>
-          @if (igOk) {
-            <span class="badge text-bg-success">Connected</span>
-          } @else {
-            <span class="badge text-bg-secondary">Not connected</span>
-          }
-        </div>
-        @if (igAccounts.length) {
-          <ul class="list-unstyled small text-muted">
-            @for (a of igAccounts; track a._id) {
-              <li>&#64;{{ a.username || a.igUserId }}</li>
+      <div class="col-12 col-md-6">
+        <div class="border rounded-3 p-3 h-100 d-flex flex-column acc-panel">
+          <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+            <span class="fs-3" aria-hidden="true" role="img">📷</span>
+            <span class="fw-semibold">Instagram</span>
+            @if (igOk) {
+              <span class="badge text-bg-success">Connected</span>
+            } @else {
+              <span class="badge text-bg-secondary">Not connected</span>
             }
-          </ul>
-        } @else {
-          <p class="text-muted small">Add a long-lived user token and Instagram Business / Creator id.</p>
-        }
-        <div class="border-top pt-2 mt-2 small">
-          <div class="mb-2">
-            <input
-              class="form-control form-control-sm mb-1"
-              type="text"
-              placeholder="ig user id"
-              [(ngModel)]="igForm.igUserId"
-              [ngModelOptions]="{ standalone: true }"
-            />
-            <input
-              class="form-control form-control-sm mb-1"
-              type="password"
-              placeholder="user access token"
-              [(ngModel)]="igForm.accessToken"
-              [ngModelOptions]="{ standalone: true }"
-            />
-            <input
-              class="form-control form-control-sm mb-1"
-              type="text"
-              placeholder="page id (optional)"
-              [(ngModel)]="igForm.pageId"
-              [ngModelOptions]="{ standalone: true }"
-            />
-            <input
-              class="form-control form-control-sm"
-              type="text"
-              placeholder="username (optional)"
-              [(ngModel)]="igForm.username"
-              [ngModelOptions]="{ standalone: true }"
-            />
           </div>
-          <button type="button" class="btn btn-sm btn-primary" [disabled]="busy" (click)="connectInstagram()">Connect Instagram</button>
+          <p class="text-muted small mb-2">
+            @if (status?.instagram?.username) {
+              <span class="text-body">&#64;{{ status?.instagram?.username }}</span>
+            } @else if (igAccounts.length) {
+              @for (a of igAccounts; track a._id) {
+                <span class="d-block">&#64;{{ a.username || a.igUserId }}</span>
+              }
+            } @else {
+              Not linked. Business or Creator account required.
+            }
+          </p>
+          <div class="mt-auto d-flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              [disabled]="busy"
+              (click)="connectInstagram()"
+            >
+              @if (igOk) {
+                <span>Reconnect / another account</span>
+              } @else {
+                <span>Connect Instagram</span>
+              }
+            </button>
+            @for (a of igAccounts; track a._id) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="busy"
+                (click)="disconnectInstagram(a, $event)"
+              >
+                Disconnect
+              </button>
+            }
+          </div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="fs-4">▶</span>
-          <span class="fw-medium">YouTube</span>
-          @if (ytOk) {
-            <span class="badge text-bg-success">Connected</span>
-          } @else {
-            <span class="badge text-bg-secondary">Not connected</span>
-          }
-        </div>
-        @if (ytAccounts.length) {
-          <ul class="list-unstyled small text-muted">
-            @for (c of ytAccounts; track c._id) {
-              <li>{{ c.channelTitle }} ({{ c.channelId }})</li>
+      <div class="col-12 col-md-6">
+        <div class="border rounded-3 p-3 h-100 d-flex flex-column acc-panel">
+          <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+            <span class="fs-3" aria-hidden="true" role="img">▶</span>
+            <span class="fw-semibold">YouTube</span>
+            @if (ytOk) {
+              <span class="badge text-bg-success">Connected</span>
+            } @else {
+              <span class="badge text-bg-secondary">Not connected</span>
             }
-          </ul>
-        } @else {
-          <p class="text-muted small">Open Google, approve access, then paste the <code>code</code> from the callback URL.</p>
-        }
-        @if (ytRedirectUri) {
-          <div class="alert alert-secondary small py-2 mb-0">
-            <strong>Google console</strong> — add this <em>exact</em> URL under OAuth client →
-            <span class="text-nowrap">Authorized redirect URIs</span> to fix
-            <code>redirect_uri_mismatch</code>:<br />
-            <code class="d-inline-block mt-1 user-select-all break-all small">{{ ytRedirectUri }}</code>
           </div>
-        }
-        <div class="border-top pt-2 mt-2 d-flex flex-column gap-2 small">
-          <div class="d-flex flex-wrap gap-1">
-            <button type="button" class="btn btn-sm btn-outline-primary" (click)="openYoutubeAuth()">Connect YouTube (browser)</button>
+          <p class="text-muted small mb-2">
+            @if (status?.youtube?.channelName) {
+              <span class="text-body">{{ status?.youtube?.channelName }}</span>
+            } @else if (ytAccounts.length) {
+              @for (c of ytAccounts; track c._id) {
+                <span class="d-block">{{ c.channelTitle }}</span>
+              }
+            } @else {
+              Approve in Google, then you’ll return to the dashboard.
+            }
+          </p>
+          @if (ytRedirectUri) {
+            <div class="alert alert-light border small py-2 mb-2 text-break">
+              <span class="fw-medium">Google Cloud</span> — add this redirect URI to OAuth client →
+              <span class="text-nowrap">Authorized redirect URIs</span> (exact match):<br />
+              <code class="d-inline-block mt-1 user-select-all small break-all">{{ ytRedirectUri }}</code>
+            </div>
+          }
+          <div class="mt-auto d-flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              [disabled]="busy"
+              (click)="connectYoutube()"
+            >
+              @if (ytOk) {
+                <span>Reconnect / add channel</span>
+              } @else {
+                <span>Connect YouTube</span>
+              }
+            </button>
+            @for (c of ytAccounts; track c._id) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="busy"
+                (click)="disconnectYoutube(c, $event)"
+              >
+                Disconnect
+              </button>
+            }
           </div>
-          <input
-            class="form-control form-control-sm"
-            type="text"
-            placeholder="Authorization code (from redirect ?code=…)"
-            [(ngModel)]="ytCode"
-            [ngModelOptions]="{ standalone: true }"
-          />
-          <button type="button" class="btn btn-sm btn-primary align-self-start" [disabled]="busy" (click)="exchangeYoutubeCode()">Complete link</button>
         </div>
       </div>
     </div>

@@ -1,3 +1,20 @@
+@if (accountToast) {
+  <div
+    class="position-fixed top-0 start-50 translate-middle-x mt-5 p-2"
+    style="z-index: 1080; max-width: min(90vw, 28rem); width: 100%"
+  >
+    <div
+      class="alert shadow-sm mb-0 d-flex align-items-start justify-content-between gap-2"
+      [class.alert-success]="accountToast.kind === 'success'"
+      [class.alert-danger]="accountToast.kind === 'danger'"
+      role="status"
+    >
+      <span class="small">{{ accountToast.text }}</span>
+      <button type="button" class="btn-close btn-sm" (click)="dismissAccountToast()" aria-label="Dismiss"></button>
+    </div>
+  </div>
+}
+
 <div class="dashboard-hero text-white mb-4">
   <div class="container-fluid">
     <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 py-4">

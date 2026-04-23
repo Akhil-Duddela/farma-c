@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1>Settings</h1>
-    <p class="muted mb-0">Profile, timezone (IST default), and Instagram accounts</p>
+    <p class="muted mb-0">Profile, timezone (IST default), and linked social accounts</p>
   </div>
 </div>
 
@@ -15,61 +15,49 @@
 <div class="row g-3 g-lg-4">
   <section class="col-12 col-lg-6">
     <div class="card pad h-100">
-    <h2>Profile &amp; automation</h2>
-    <form [formGroup]="profile" (ngSubmit)="saveProfile()">
-      <label>Name</label>
-      <input type="text" class="form-control w-100" formControlName="name" />
-      <label>Timezone</label>
-      <input type="text" class="form-control w-100" formControlName="timezone" />
-      <label>Daily auto posts (0 = off)</label>
-      <input type="number" class="form-control w-100" formControlName="dailyAutoPostCount" />
-      <label>Preferred hour (IST, 0–23)</label>
-      <input type="number" class="form-control w-100" formControlName="dailyAutoPostHourIST" />
-      <div class="d-grid d-sm-block mt-2">
-        <button class="btn primary" type="submit">Save</button>
-      </div>
-    </form>
+      <h2>Profile &amp; automation</h2>
+      <form [formGroup]="profile" (ngSubmit)="saveProfile()">
+        <label>Name</label>
+        <input type="text" class="form-control w-100" formControlName="name" />
+        <label>Timezone</label>
+        <input type="text" class="form-control w-100" formControlName="timezone" />
+        <label>Daily auto posts (0 = off)</label>
+        <input type="number" class="form-control w-100" formControlName="dailyAutoPostCount" />
+        <label>Preferred hour (IST, 0–23)</label>
+        <input type="number" class="form-control w-100" formControlName="dailyAutoPostHourIST" />
+        <div class="d-grid d-sm-block mt-2">
+          <button class="btn primary" type="submit">Save</button>
+        </div>
+      </form>
     </div>
   </section>
 
   <section class="col-12 col-lg-6">
     <div class="card pad h-100">
-    <h2>Instagram Graph API</h2>
-    <p class="muted small">
-      Use a long-lived User access token with <code>instagram_basic</code>,
-      <code>instagram_content_publish</code>, and <code>pages_show_list</code>. Link your Instagram
-      Business/Creator account.
-    </p>
-    <form [formGroup]="linkForm" (ngSubmit)="linkIg()">
-      <label>Instagram Business user ID</label>
-      <input type="text" class="form-control w-100" formControlName="igUserId" />
-      <label>Long-lived access token (or leave empty and use short-lived below)</label>
-      <input type="password" class="form-control w-100" formControlName="accessToken" autocomplete="off" />
-      <label>Short-lived token (exchange server-side)</label>
-      <input type="password" class="form-control w-100" formControlName="shortLivedToken" autocomplete="off" />
-      <label>Username (optional)</label>
-      <input type="text" class="form-control w-100" formControlName="username" />
-      <label>Facebook Page ID (optional)</label>
-      <input type="text" class="form-control w-100" formControlName="pageId" />
-      <div class="d-grid d-sm-block mt-2">
-        <button class="btn secondary" type="submit">Link account</button>
-      </div>
-    </form>
-
-    <h3>Linked accounts</h3>
-    <ul class="accounts">
-      @for (a of accounts; track a._id) {
-        <li>
-          <strong>{{ a.username || a.igUserId }}</strong>
-          @if (a.isDefault) {
-            <span class="badge">default</span>
+      <h2>Social accounts</h2>
+      <p class="muted small">
+        Connect Instagram and YouTube on the
+        <a routerLink="/dashboard" fragment="connect-accounts">dashboard (Connected accounts)</a>
+        using “Connect” — no manual tokens.
+      </p>
+      <h3>Linked Instagram (read-only)</h3>
+      @if (accounts.length) {
+        <ul class="accounts">
+          @for (a of accounts; track a._id) {
+            <li>
+              <strong>{{ a.username || a.igUserId }}</strong>
+              @if (a.isDefault) {
+                <span class="badge">default</span>
+              }
+              @if (!a.isDefault) {
+                <button type="button" class="link" (click)="setDefault(a._id)">Make default</button>
+              }
+            </li>
           }
-          @if (!a.isDefault) {
-            <button type="button" class="link" (click)="setDefault(a._id)">Make default</button>
-          }
-        </li>
+        </ul>
+      } @else {
+        <p class="muted small mb-0">No Instagram account linked yet.</p>
       }
-    </ul>
     </div>
   </section>
 </div>

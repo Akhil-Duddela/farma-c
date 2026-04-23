@@ -20,6 +20,10 @@ export class InstagramService {
     return this.http.get<IgAccount[]>(`${environment.apiUrl}/instagram/accounts`);
   }
 
+  getAuthUrl(): Observable<{ url: string }> {
+    return this.http.get<{ url: string }>(`${environment.apiUrl}/instagram/auth-url`);
+  }
+
   link(body: {
     igUserId: string;
     accessToken?: string;
@@ -32,5 +36,9 @@ export class InstagramService {
 
   setDefault(id: string): Observable<IgAccount> {
     return this.http.patch<IgAccount>(`${environment.apiUrl}/instagram/accounts/${id}/default`, {});
+  }
+
+  disconnect(id: string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${environment.apiUrl}/instagram/accounts/${id}`);
   }
 }

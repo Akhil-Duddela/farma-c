@@ -32,4 +32,8 @@ export class YoutubeService {
   setDefault(id: string): Observable<YoutubeAccount> {
     return this.http.patch<YoutubeAccount>(`${environment.apiUrl}/youtube/accounts/${id}/default`, {});
   }
+
+  disconnect(id: string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${environment.apiUrl}/youtube/accounts/${id}`);
+  }
 }

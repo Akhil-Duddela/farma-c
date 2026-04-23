@@ -7,7 +7,6 @@ const router = express.Router();
 // ✅ PUBLIC ROUTE (NO AUTH)
 router.get('/callback', youtubeController.callback);
 
-// ✅ PROTECTED ROUTES
 router.use(authenticate);
 
 router.get('/auth-url', youtubeController.authUrl);
@@ -15,5 +14,6 @@ router.post('/exchange', youtubeController.exchangeCode);
 router.post('/link', youtubeController.linkTokens);
 router.get('/accounts', youtubeController.list);
 router.patch('/accounts/:id/default', youtubeController.setDefault);
+router.delete('/accounts/:id', youtubeController.removeAccount);
 
 module.exports = router;

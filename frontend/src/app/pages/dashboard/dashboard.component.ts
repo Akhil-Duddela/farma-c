@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { CreatePostCardComponent } from './create-post-card.component';
 import { PostStatusTableComponent } from './post-status-table.component';
 import { AccountsCardComponent } from './accounts-card.component';
@@ -33,19 +33,14 @@ export class DashboardComponent implements OnInit {
 
   refreshTick = 0;
   summary: { totals?: { likes: number; reach: number; impressions: number } } = {};
+  /** OAuth return toasts */
+  accountToast: { kind: 'success' | 'danger'; text: string } | null = null;
 
   ngOnInit(): void {
     this.analytics.summary().subscribe((s) => (this.summary = s));
-    const y = this.route.snapshot.queryParamMap.get('youtube');
-    if (y) {
-      this.bump();
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { youtube: null },
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
-      });
-    }
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((q) => {
+      this.handleAccountQueryParams(q);
+    });
     this.route.fragment
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((frag) => {
@@ -55,6 +50,47 @@ export class DashboardComponent implements OnInit {
           }, 0);
         }
       });
+  }
+
+  dismissAccountToast(): void {
+    this.accountToast = null;
+  }
+
+  private handleAccountQueryParams(q: ParamMap): void {
+    const ig = q.get('ig');
+    const yt = q.get('yt');
+    const legacyY = q.get('youtube');
+    const reason = q.get('reason') || '';
+
+    if (!ig && !yt && !legacyY && !reason) {
+      return;
+    }
+
+    if (ig === 'error') {
+      this.accountToast = { kind: 'danger', text: `Instagram: ${reason || 'connection failed'}` };
+    } else if (yt === 'error' || legacyY === 'error') {
+      this.accountToast = { kind: 'danger', text: `YouTube: ${reason || 'connection failed'}` };
+    } else {
+      const ok: string[] = [];
+      if (ig === 'connected') ok.push('Instagram');
+      if (yt === 'connected' || legacyY === 'connected') ok.push('YouTube');
+      if (ok.length) {
+        this.accountToast = {
+          kind: 'success',
+          text: `${ok.join(' and ')} connected successfully.`,
+        };
+        this.bump();
+      }
+    }
+
+    if (ig || yt || legacyY || reason) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { ig: null, yt: null, youtube: null, reason: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   onPostCreated(): void {

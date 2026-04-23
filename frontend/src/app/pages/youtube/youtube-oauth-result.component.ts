@@ -68,7 +68,7 @@ export class YoutubeOauthResultComponent implements OnInit {
           window.close();
         } catch {
           void this.router
-            .navigate(['/dashboard'], { queryParams: { youtube: 'error' }, replaceUrl: true })
+            .navigate(['/dashboard'], { queryParams: { yt: 'error' }, replaceUrl: true })
             .then((navOk) => {
               if (navOk) this.bridge.notifySameTab({ status: 'error', reason: err });
             });
@@ -92,7 +92,7 @@ export class YoutubeOauthResultComponent implements OnInit {
         } catch {
           this.line = 'You can return to the dashboard in the other tab.';
           void this.router
-            .navigate(['/dashboard'], { queryParams: { youtube: 'connected' }, replaceUrl: true })
+            .navigate(['/dashboard'], { queryParams: { yt: 'connected' }, replaceUrl: true })
             .then((navOk) => {
               if (navOk) this.bridge.notifySameTab({ status: 'connected' });
             });
@@ -100,7 +100,7 @@ export class YoutubeOauthResultComponent implements OnInit {
       }, 150);
     } else {
       void this.router
-        .navigate(['/dashboard'], { queryParams: { youtube: 'connected' }, replaceUrl: true })
+        .navigate(['/dashboard'], { queryParams: { yt: 'connected' }, replaceUrl: true })
         .then((navOk) => {
           if (navOk) this.bridge.notifySameTab({ status: 'connected' });
         });
