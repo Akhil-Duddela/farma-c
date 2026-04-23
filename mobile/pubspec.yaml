@@ -1,0 +1,31 @@
+name: farm_c_ai_mobile
+description: Farm-C AI — Android & iOS client for the Farm-C AI backend
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.0
+  go_router: ^14.0.0
+  dio: ^5.0.0
+  shared_preferences: ^2.2.0
+  flutter_secure_storage: ^9.2.0
+  intl: ^0.20.0
+  url_launcher: ^6.2.0
+  webview_flutter: ^4.10.0
+  connectivity_plus: ^6.0.0
+  app_links: ^5.0.0
+  state_notifier: ^1.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
