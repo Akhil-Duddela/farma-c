@@ -29,6 +29,17 @@ flutter pub get
 flutter run
 ```
 
+## Push notifications (FCM)
+
+1. Create a Firebase project, add **Android** and **iOS** apps.
+2. Run **`flutterfire configure`** in `mobile/` (or merge `lib/firebase_options.dart` and native config by hand).
+3. Replace the placeholder `android/app/google-services.json` with the file from Firebase (same package `com.farmcai.farm_c_ai_mobile`).
+4. Add **iOS** `GoogleService-Info.plist` in `ios/Runner/` and enable **Push Notifications** in Xcode.
+5. Backend: set `FIREBASE_SERVICE_ACCOUNT_PATH` to a service-account JSON (or `FIREBASE_SERVICE_ACCOUNT_JSON` / `GOOGLE_APPLICATION_CREDENTIALS`). Without credentials, the API still runs; push is skipped.
+6. The app registers the device on login and unregisters on logout (`POST /api/notifications/register-device` / `unregister-device`).
+
+Foreground Android uses **flutter_local_notifications**; background/killed use FCM. Taps route by `data.type` to post detail, accounts, or verification.
+
 ## Tests
 
 ```bash

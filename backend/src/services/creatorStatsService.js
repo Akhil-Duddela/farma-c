@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Post = require('../models/Post');
 const badgeService = require('./badgeService');
 const logger = require('../utils/logger');
+const notificationService = require('./notificationService');
 
 /**
  * @param {import('mongoose').Types.ObjectId} userId
@@ -87,6 +88,11 @@ async function applyTerminalIfNeeded(post) {
     post.lastStatsKey = key;
     post.markModified('lastStatsKey');
     await badgeService.recomputeForUserId(post.userId);
+    try {
+      await notificationService.notifyPostTerminal(post);
+    } catch (e) {
+      logger.warn('notifyPostTerminal', { err: e.message, postId: post._id });
+    }
   } catch (e) {
     logger.error('creatorStats.applyTerminalIfNeeded', { err: e.message, postId: post._id });
   }

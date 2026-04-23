@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/repositories/farmc_api.dart';
 import '../../core/services/auth_state.dart';
+import '../../core/services/fcm_bootstrap.dart';
 import '../../core/utils/ui_feedback.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -37,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _pass.text,
           );
       await ref.read(authStateProvider.notifier).setTokenAndUser(r.$1, r.$2);
+      await reregisterFcmForLoggedInUser(ref);
       if (mounted) {
         context.go('/home');
       }

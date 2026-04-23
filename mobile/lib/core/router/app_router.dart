@@ -28,7 +28,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final c = ProviderScope.containerOf(context);
       final token = c.read(authStateProvider).token;
       final p = state.matchedLocation;
-      final onAuth = p == '/login' || p == '/register' || p == '/oauth-web';
+      final onAuth =
+          p == '/login' || p == '/register' || p == '/oauth-web' || p == '/verify-callback';
       if ((token == null || token.isEmpty) && !onAuth) {
         return '/login';
       }

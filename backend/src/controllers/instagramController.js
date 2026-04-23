@@ -8,6 +8,7 @@ const logService = require('../services/logService');
 const config = require('../config');
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 const frontendBase = config.frontendUrl;
 
@@ -111,6 +112,15 @@ async function selectAccount(req, res) {
       message: `Selected @${doc.username}`,
     });
     logger.info('Instagram account selected after OAuth', { userId: String(req.user._id), accountId });
+    try {
+      await notificationService.sendAccountConnected(
+        req.user._id,
+        'instagram',
+        doc.username ? `@${doc.username}` : String(doc.igUserId || '')
+      );
+    } catch (e) {
+      logger.warn('FCM account_connected IG select', { err: e.message });
+    }
     res.json({ ok: true, id: doc._id, username: doc.username, igUserId: doc.igUserId });
   } catch (e) {
     const s = e.reasonCode === 'invalid_selection' ? 400 : 500;

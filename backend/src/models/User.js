@@ -73,6 +73,8 @@ const userSchema = new mongoose.Schema(
       aiUsageCount: { type: Number, default: 0 },
       lastPostAt: { type: Date, default: null },
     },
+    /** FCM device tokens (max ~20; newest kept on register) */
+    fcmTokens: { type: [String], default: [] },
   },
   { timestamps: true }
 );

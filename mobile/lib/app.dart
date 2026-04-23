@@ -5,6 +5,7 @@ import 'core/repositories/farmc_api.dart';
 import 'core/router/app_router.dart';
 import 'core/services/auth_state.dart';
 import 'core/services/deep_link_bootstrap.dart';
+import 'core/services/fcm_bootstrap.dart';
 import 'core/theme/app_theme.dart';
 
 class FarmCApp extends ConsumerStatefulWidget {
@@ -29,6 +30,7 @@ class _FarmCAppState extends ConsumerState<FarmCApp> {
         });
       }
       registerDeepLinkListeners(ref);
+      startFcmListeners(ref);
     });
   }
 

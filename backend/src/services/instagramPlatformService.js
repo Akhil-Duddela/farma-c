@@ -4,6 +4,7 @@ const instagramService = require('./instagramService');
 const tokenService = require('./tokenService');
 const { getPrimaryMediaUrl } = require('../utils/platformMedia');
 const { markPlatformResult, recomputeAggregatedStatus } = require('./postStatusService');
+const creatorStatsService = require('./creatorStatsService');
 const logService = require('./logService');
 const { withRetry } = require('../utils/retry');
 
@@ -100,6 +101,7 @@ async function executeInstagramJob({ postId }) {
     }
     fresh.markModified('platforms');
     recomputeAggregatedStatus(fresh);
+    await creatorStatsService.applyTerminalIfNeeded(fresh);
     await fresh.save();
 
     await logService.logEntry({

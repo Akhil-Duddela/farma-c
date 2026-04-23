@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' show StateNotifierProvid
 import 'package:state_notifier/state_notifier.dart';
 
 import '../models/user_model.dart';
+import 'fcm_token_lifecycle.dart';
 import 'secure_token_storage.dart';
 
 class AuthState {
@@ -63,6 +64,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> clear() async {
+    final jwt = state.token;
+    await unregisterFcmOnLogout(jwt);
     await _storage.clear();
     state = const AuthState();
   }

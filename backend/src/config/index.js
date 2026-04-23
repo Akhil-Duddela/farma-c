@@ -147,4 +147,14 @@ module.exports = {
     sentryDsn: (process.env.SENTRY_DSN || '').trim(),
     metricsEnabled: process.env.METRICS_ENABLED !== '0',
   },
+  /**
+   * Firebase Admin for FCM. Use either:
+   * - FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/serviceAccount.json, or
+   * - GOOGLE_APPLICATION_CREDENTIALS, or
+   * - FIREBASE_SERVICE_ACCOUNT_JSON (entire JSON string, e.g. base64 in managed hosts)
+   */
+  fcm: {
+    serviceAccountPath: (process.env.FIREBASE_SERVICE_ACCOUNT_PATH || '').trim(),
+    serviceAccountJson: (process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim(),
+  },
 };

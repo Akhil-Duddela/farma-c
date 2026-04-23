@@ -6,6 +6,7 @@ const logService = require('../services/logService');
 const { createState, consumeState, getYtPickPublic } = require('../services/oauthStateService');
 const { failQueuedJobsForAccount } = require('../services/accountDisconnectService');
 const logger = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 /**
  * @returns {Promise<{ id: string, channelId: string, channelTitle: string, tokenExpiresAt: Date }>}
@@ -87,6 +88,11 @@ async function callback(req, res) {
     if (r.type === 'choose') {
       return res.redirect(302, pickWithKeyUrl(r.pickKey));
     }
+    try {
+      await notificationService.sendAccountConnected(userId, 'youtube');
+    } catch (e) {
+      logger.warn('FCM account_connected YT', { err: e.message });
+    }
     return res.redirect(302, oauthResultUrl(true));
   } catch (e) {
     const c = e.reasonCode || (e.message && e.message.includes('No YouTube') ? 'no_youtube_channel' : 'oauth_failed');
@@ -127,6 +133,15 @@ async function selectChannel(req, res) {
     }
     const doc = await youtubeTokenService.selectChannelFromPick(String(req.user._id), pickKey, channelId);
     await logService.logEntry({ userId: req.user._id, step: 'youtube.select', message: `Channel ${doc.channelId}` });
+    try {
+      await notificationService.sendAccountConnected(
+        req.user._id,
+        'youtube',
+        doc.channelTitle || String(doc.channelId || '')
+      );
+    } catch (e) {
+      logger.warn('FCM account_connected YT select', { err: e.message });
+    }
     res.json({ ok: true, id: doc._id, channelId: doc.channelId, channelTitle: doc.channelTitle });
   } catch (e) {
     const s = e.reasonCode === 'invalid_selection' ? 400 : 500;

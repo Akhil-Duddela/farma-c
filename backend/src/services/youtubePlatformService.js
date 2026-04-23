@@ -4,6 +4,7 @@ const { recomputeAggregatedStatus, markPlatformResult } = require('./postStatusS
 const youtubeService = require('./youtubeService');
 const logService = require('./logService');
 const { withRetry } = require('../utils/retry');
+const creatorStatsService = require('./creatorStatsService');
 
 const VIDEO_TYPES = new Set(['video', 'reel']);
 
@@ -113,6 +114,7 @@ async function executeYoutubeJob({ postId }) {
     if (!fresh.youtubeVideoId) fresh.youtubeVideoId = videoId;
     fresh.markModified('platforms');
     recomputeAggregatedStatus(fresh);
+    await creatorStatsService.applyTerminalIfNeeded(fresh);
     await fresh.save();
 
     await logService.logEntry({

@@ -7,6 +7,7 @@ const smsService = require('./smsService');
 const { normalizeE164, maskPhone } = require('../utils/phone');
 const logger = require('../utils/logger');
 const aiVerificationService = require('./aiVerificationService');
+const notificationService = require('./notificationService');
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
@@ -232,6 +233,17 @@ async function submitProfileVerification(user) {
     status: user.verificationStatus,
     auto: r.valid,
   });
+  if (user.verificationStatus === 'auto_verified') {
+    try {
+      await notificationService.sendVerification(
+        user._id,
+        'auto_approved',
+        'Your profile photo passed automatic verification.'
+      );
+    } catch (e) {
+      logger.warn('FCM verification auto', { err: e.message });
+    }
+  }
   return user;
 }
 

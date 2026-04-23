@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const logger = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 /**
  * GET /api/admin/verifications?status=queue&page=1&limit=30
@@ -65,6 +66,11 @@ async function approveUser(req, res, next) {
     u.verificationNotes = notes || 'Approved by admin';
     await u.save();
     logger.info('Admin approved verification', { admin: String(req.user._id), userId: String(u._id) });
+    try {
+      await notificationService.sendVerification(u._id, 'approved', u.verificationNotes);
+    } catch (e) {
+      logger.warn('sendVerification approved', { err: e.message });
+    }
     res.json({ ok: true, verificationStatus: u.verificationStatus });
   } catch (e) {
     next(e);
@@ -90,6 +96,11 @@ async function rejectUser(req, res, next) {
     u.verificationNotes = reason.slice(0, 2000);
     await u.save();
     logger.info('Admin rejected verification', { admin: String(req.user._id), userId: String(u._id) });
+    try {
+      await notificationService.sendVerification(u._id, 'rejected', reason);
+    } catch (e) {
+      logger.warn('sendVerification rejected', { err: e.message });
+    }
     res.json({ ok: true, verificationStatus: u.verificationStatus });
   } catch (e) {
     next(e);

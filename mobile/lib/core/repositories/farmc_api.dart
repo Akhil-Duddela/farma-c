@@ -43,6 +43,13 @@ class FarmCApi {
     await _ref.postData('/auth/resend-verification');
   }
 
+  Future<void> registerFcmToken(String token) async {
+    await _ref.postData(
+      '/notifications/register-device',
+      data: {'token': token},
+    );
+  }
+
   /// Public email verification (no prior login). Uses `json=1` to avoid follow redirects.
   Future<void> verifyEmailByToken(String token) async {
     try {
